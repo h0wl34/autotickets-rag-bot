@@ -1,0 +1,19 @@
+model: 
+  name: catboost
+  params: {} # default models params stored in configs/models.yaml 
+
+features:
+  - cat_features.npz
+  - time_features.npz
+  # - question_tfidf.npz
+  - question_bge_m3.npz
+
+target: subcategory
+
+validation:
+  n_splits: 2
+  stratify_by: subcategory
+
+seed: 42
+max_samples: 10000
+full_train: False # use train + val splits for training

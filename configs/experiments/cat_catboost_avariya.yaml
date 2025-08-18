@@ -1,0 +1,29 @@
+model: 
+  name: catboost
+  params:
+    loss_function: Logloss
+    eval_metric: Recall:use_weights=false
+    learning_rate: 0.1
+    depth: 8
+    l2_leaf_reg: 3.0
+    random_seed: 42
+    iterations: 500
+    verbose: 10
+    thread_count: -1
+    early_stopping_rounds: 50
+    class_weights: [1, 100]
+  
+features:
+  - cat_features.npz
+  - time_features.npz
+  - question_bge_m3.npz
+
+target: avariya
+
+validation:
+  n_splits: 2
+  stratify_by: avariya
+
+class_weight: balanced
+max_samples: Null
+full_train: True # use train + val splits for training

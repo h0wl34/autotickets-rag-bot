@@ -1,0 +1,25 @@
+model: 
+  name: logreg
+  params:
+    penalty: l2              # or "none", "l1", "elasticnet"
+    solver: lbfgs            # lbfgs, saga (needed for l1/elasticnet)
+    max_iter: 1000           # increase iterations for convergence
+    C: 1.0                   # inverse regularization strength
+    class_weight: balanced   # handle imbalance (instead of manual weights)
+    random_state: 42
+    n_jobs: -1               # parallelization
+    verbose: 2
+
+features:
+  - cat_features.npz
+  - time_features.npz
+  - question_bge_m3.npz
+
+target: subcategory
+
+validation:
+  n_splits: 2
+  stratify_by: subcategory
+
+max_samples: 100000
+full_train: True # use train + val splits for training

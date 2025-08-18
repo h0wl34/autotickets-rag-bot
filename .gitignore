@@ -1,0 +1,75 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# VS Code specific
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Python virtual environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Environment variables
+.env
+.venv
+
+# IDE specific files
+.idea/
+.DS_Store
+
+# PyCharm
+.idea/
+
+# Training checkpoints and models
+*.pt
+*.pth
+*.model
+*.weights
+checkpoints/
+
+# MLFlow
+mlruns/
+
+# TensorBoard
+tensorboard/
+*.tfevents.*
+
+# Profiling output
+*.prof
+
+# Build and distribution directories
+build/
+dist/
+*.egg-info/
+*.egg
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+catboost_info/
+torch_container/
+models/*
+data/*
+runs/*

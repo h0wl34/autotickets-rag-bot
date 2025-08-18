@@ -1,0 +1,27 @@
+# default hps for models 
+catboost:
+  loss_function: MultiClass
+  eval_metric: TotalF1
+  learning_rate: 0.1
+  depth: 6
+  l2_leaf_reg: 3.0
+  random_seed: 42
+  iterations: 90
+  verbose: 10
+  thread_count: -1
+  early_stopping_rounds: 50
+
+lightgbm:
+  objective: multiclass
+  num_leaves: 63
+  learning_rate: 0.05
+  n_estimators: 800
+  random_state: 42
+
+xgboost:
+  objective: multi:softprob
+  eval_metric: mlogloss
+  max_depth: 8
+  n_estimators: 100
+  random_state: 42
+  n_jobs: -1

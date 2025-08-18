@@ -1,0 +1,15 @@
+model: 
+  name: catboost
+  params: {} # default models params stored in configs/models.yaml 
+
+features:
+  - question_bge_m3.npz
+
+target: avariya
+
+validation:
+  n_splits: 2
+  stratify_by: subcategory
+
+max_samples: 300000
+full_train: True # use train + val splits for training

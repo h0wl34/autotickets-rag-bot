@@ -1,0 +1,17 @@
+# Possible feature sets
+features:
+  - cat_features.npz
+  - time_features.npz
+  - question_tfidf.npz
+  - question_bge_m3.npz
+
+groups:
+  categorical:
+    - cat_features.npz
+  time:
+    - time_features.npz
+  text:
+    - question_tfidf.npz
+    - question_bge_m3.npz
+
+# Answer and Title columns are going to be used for the RAG part
