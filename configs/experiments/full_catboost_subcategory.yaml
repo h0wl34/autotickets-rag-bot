@@ -1,0 +1,14 @@
+model:
+  name: catboost
+  params:
+    loss_function: MultiClass
+    eval_metric: MacroF1
+    learning_rate: 0.05
+    depth: 7
+    l2_leaf_reg: 3.0
+    iterations: 2000
+    verbose: 100
+    thread_count: -1
+    border_count: 128
+    early_stopping_rounds: 200
+    class_weights: balanced

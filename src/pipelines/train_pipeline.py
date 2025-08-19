@@ -10,7 +10,6 @@ from src.configs.paths import RUNS_DIR
 from src.utils.model_utils import ModelBundle
 
 class TrainingPipeline:
-
     def __init__(self, config: Dict):
         self.config = config
         self.model_name = config["model"]["name"]

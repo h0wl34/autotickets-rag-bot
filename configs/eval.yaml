@@ -1,3 +1,0 @@
-eval:
-  n_splits: 5
-  stratify_by: SUBCATEGORY_CLEAN_enc  # чем стратифицируем сплиты по умолчанию

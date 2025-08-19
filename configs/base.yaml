@@ -1,3 +1,5 @@
+# Base train/val config
+
 model: 
   name: catboost
   params: {} # default models params stored in configs/models.yaml 

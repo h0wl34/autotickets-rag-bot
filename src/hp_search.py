@@ -208,17 +208,15 @@ def main():
                 random_state=cfg.get("seed", 42),
                 metric=args.metric
             )
+            
         trial_time = time.time() - start_time
-        
         trial.set_user_attr("params_used", params)
-        
         logger.info(f"Trial {trial.number}: score={score:.6f}, duration={trial_time:.1f}s, params={params}")
         
         # сохраняем промежуточные результаты каждые N трейлов
         trials_results.append({"number": trial.number, "value": score, "params": params})
         if (trial.number + 1) % args.save_every == 0:
-            with open(out_dir / "trials_intermediate.json", "w") as f:
-                save_json(trials_results, f)
+            save_json(trials_results, out_dir / "trials_intermediate.json")
         
         return score
 

@@ -26,7 +26,7 @@ def timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def get_logger(name: str = "train", out_dir: Path | None = None, tee_stdout: bool = False) -> logging.Logger:
+def get_logger(name: str = "train", out_dir: Path | None = None, tee_stdout: bool = True) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
@@ -72,7 +72,7 @@ class TeeStream:
         self.stream.flush()
     
 
-def save_json(obj: Dict[str, Any], path: Path) -> None:
+def save_json(obj: Dict[str, Any] | list, path: Path) -> None:
     ensure_dir(path.parent)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2, ensure_ascii=False)
