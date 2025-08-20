@@ -6,7 +6,7 @@ from src.configs.paths import PATHS
 from src.utils.config_helper import TARGETS_CONFIG
 
 
-def load_features(feature_files: list[str] | str, output_format: str = "sparse"):
+def load_features(feature_files: list[str] | str, output_format: str):
     """Универсальная загрузка с выбором формата."""
     if isinstance(feature_files, str):
         feature_files = [feature_files]
@@ -66,7 +66,7 @@ def combine_to_dense(sparse: list[csr_matrix], dense: list[np.ndarray]) -> np.nd
     return combined  # На выходе dense
 
 
-def load_features_separately(feature_files: list[str]) -> tuple[list[csr_matrix], list[np.ndarray]]:
+def load_features_separately(feature_files: list[str], logger=None) -> tuple[list[csr_matrix], list[np.ndarray]]:
     """Загружает фичи, разделяя их на sparse (OHE) и dense (эмбеддинги)."""
     sparse_matrices = []
     dense_matrices = []
@@ -86,7 +86,9 @@ def load_features_separately(feature_files: list[str]) -> tuple[list[csr_matrix]
         else:
             dense_matrices.append(arr)
 
-    print(f"Loaded {len(sparse_matrices)} sparse and {len(dense_matrices)} dense feature arrays.")
+    if logger is not None: 
+        logger.info(f"Loaded {len(sparse_matrices)} sparse and {len(dense_matrices)} dense feature arrays.")
+        
     return sparse_matrices, dense_matrices
 
 def load_npz_feature(fpath):

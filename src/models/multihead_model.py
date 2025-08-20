@@ -80,5 +80,5 @@ class MultiHeadModel(nn.Module):
         # heads
         outputs = {}
         for name, head in self.heads.items():
-            outputs[name] = torch.squeeze(head(fused))
+            outputs[name] = torch.squeeze(head(fused), dim=-1)
         return outputs

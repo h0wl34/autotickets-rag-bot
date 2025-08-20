@@ -1,6 +1,5 @@
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils.class_weight import compute_sample_weight
-# from .utils.metrics_utils import compute_metrics
 from sklearn.metrics import classification_report
 from .utils.model_utils import build_model
 

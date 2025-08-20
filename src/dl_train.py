@@ -1,6 +1,7 @@
 import argparse
+from torch.utils.data import ConcatDataset
 
-from src.utils.io_utils import load_yaml
+from src.utils.io_utils import get_logger, load_yaml
 from src.pipelines.dl_trainer import DLTrainer
 from src.models.multihead_model import MultiHeadModel
 from src.datasets.ticket_dataset import TicketDataset
@@ -9,11 +10,13 @@ from src.datasets.ticket_dataset import TicketDataset
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, default=None, help="Путь к файлу конфигурации")
+    p.add_argument("--full_dataset", action="store_true", help="Использовать полный датасет (train + val)")
     return p.parse_args()
 
 def main():
     args = parse_args()
     cfg = load_yaml(args.config)
+    logger = get_logger("DLTrainer", tee_stdout=False)
 
     feature_files={k: v["path"] for k, v in cfg["features"].items()}
     heads_config=cfg["model"]["heads"]
@@ -21,26 +24,41 @@ def main():
     train_dataset = TicketDataset(
         feature_files=feature_files,
         heads_config=heads_config,
-        split_name="test_small"
+        split_name="train"
     )
     val_dataset = TicketDataset(
         feature_files=feature_files,
         heads_config=heads_config,
-        split_name="val_small"
+        split_name="test"
     )
-    
+
+    logger.info(f"Train dataset size: {len(train_dataset)}")
+    logger.info(f"Validation dataset size: {len(val_dataset)}")
+
     model = MultiHeadModel(
         feature_config=cfg["features"],
         heads_config=heads_config,
         hidden_dims=cfg["model"]["hidden_dims"]
     )
-
-    trainer = DLTrainer(
-        model=model,
-        train_dataset=train_dataset,
-        val_dataset=val_dataset,
-        cfg=cfg
-    )
+    
+    if (args.full_dataset):
+        full_dataset = ConcatDataset([train_dataset, val_dataset])
+        trainer = DLTrainer(
+            model=model,
+            train_dataset=full_dataset,
+            val_dataset=None,
+            cfg=cfg,
+            out_dir="../runs/dl"
+        )
+        logger.info("Using full dataset for training")
+    else:
+        trainer = DLTrainer(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            cfg=cfg,
+            out_dir="../runs/dl"
+        )
 
     trainer.fit()
 

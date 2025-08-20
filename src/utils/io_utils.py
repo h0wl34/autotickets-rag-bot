@@ -37,7 +37,7 @@ def timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def get_logger(name: str = "train", out_dir: Path | None = None, tee_stdout: bool = True) -> logging.Logger:
+def get_logger(name: str = "train", out_dir: Path | None = None, tee_stdout: bool = False) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
