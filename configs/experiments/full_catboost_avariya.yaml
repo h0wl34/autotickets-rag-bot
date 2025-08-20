@@ -1,0 +1,29 @@
+seed: 42
+
+target: avariya
+features:
+  - cat_features.npz
+  - time_features.npz
+  - question_bge_m3.npz
+
+validation:
+  n_splits: 5 
+  stratify_by: avariya
+
+model:
+  name: catboost
+  params:
+    loss_function: Logloss
+    eval_metric: 
+    learning_rate: 0.08
+    depth: 7
+    l2_leaf_reg: 3.0
+    iterations: 5000
+    verbose: 10
+    thread_count: -1
+    border_count: 256
+    early_stopping_rounds: 50
+
+# max_samples: 300000
+full_train: true
+class_weight: balanced

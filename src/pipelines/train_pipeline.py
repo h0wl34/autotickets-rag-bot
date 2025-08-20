@@ -1,4 +1,3 @@
-from typing import Dict
 from src.utils.io_utils import ensure_dir, get_logger, save_json, save_yaml
 from src.trainers import train_on_split, train_kfold
 from src.utils.data_loader import load_features, load_split, load_stratify_vector, load_target, subset_by_idx
@@ -10,22 +9,22 @@ from src.configs.paths import RUNS_DIR
 from src.utils.model_utils import ModelBundle
 
 class TrainingPipeline:
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
         self.model_name = config["model"]["name"]
         self.features = config["features"]
         self.target = config["target"]
         self.params = config["model"]["params"]
-        self.max_samples = config["max_samples"]
+        self.max_samples = config.get("max_samples", None)
         self.random_state = config["seed"]
-        self.class_weight = config.get("class_weight", None)
+        self.class_weight: str | list | None = config.get("class_weight", None)
         
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         run_name = f"{ts}_{self.model_name}_{self.target}"
         self.run_dir = Path(RUNS_DIR) / run_name
         ensure_dir(self.run_dir)
 
-    def save_single_run(self, metrics: Dict, model):
+    def save_single_run(self, metrics: dict, model):
         """Save model bundle, metrics, and config for a single run."""                
         bundle = ModelBundle(model=model, model_type=self.model_name, params=self.params)
         bundle.save(self.run_dir)

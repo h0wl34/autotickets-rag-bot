@@ -14,19 +14,15 @@ model:
   name: catboost
   params:
     loss_function: LogLoss
-    eval_metric: MacroF1
-    learning_rate: 0.05
+    eval_metric: F1
+    learning_rate: 0.1
     depth: 7
     l2_leaf_reg: 3.0
-    random_seed: 42
-    iterations: 100
+    iterations: 10000
     verbose: 10
-    od_type: Iter
-    od_wait: 200
     thread_count: -1
     border_count: 128
-    early_stopping_rounds: 30
-    class_weights: balanced
+    early_stopping_rounds: 100
 
 search_space:
   iterations:

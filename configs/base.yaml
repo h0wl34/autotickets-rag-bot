@@ -17,5 +17,5 @@ validation:
   stratify_by: subcategory
 
 seed: 42
-max_samples: 10000
 full_train: False # use train + val splits for training
+class_weight: balanced # can either be a string or 

@@ -37,7 +37,7 @@ def get_score_from_report(report_dict, metric):
     else:
         raise ValueError(f"Unknown metric: {metric}")
 
-def crossval_score(model_name, base_params, X, y, n_splits, stratify, class_weight=None, random_state=42, metric="weighted_f1"):
+def crossval_score(model_name, base_params, X, y, n_splits, stratify, class_weight: str | list | None = None, random_state=42, metric="weighted_f1"):
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     scores = []
 
@@ -64,12 +64,12 @@ def crossval_score(model_name, base_params, X, y, n_splits, stratify, class_weig
             model.fit(X_tr, y_tr, sample_weight=sample_weight)
 
         y_pred = model.predict(X_va)
-        report = classification_report(y_va, y_pred, output_dict=True)
+        report = classification_report(y_va, y_pred, output_dict=True, zero_division=0)
         scores.append(get_score_from_report(report, metric))
 
     return float(np.mean(scores))
 
-def holdout_score(model_name, base_params, X_train, y_train, X_val, y_val, class_weight=None, metric="weighted_f1"):
+def holdout_score(model_name, base_params, X_train, y_train, X_val, y_val, class_weight: str | list | None = None, metric="weighted_f1"):
     model = build_model(model_name, dict(base_params))
     sample_weight = None
     if class_weight is not None:
@@ -81,7 +81,7 @@ def holdout_score(model_name, base_params, X_train, y_train, X_val, y_val, class
         model.fit(X_train, y_train, sample_weight=sample_weight)
 
     y_pred = model.predict(X_val)
-    report = classification_report(y_val, y_pred, output_dict=True)
+    report = classification_report(y_val, y_pred, output_dict=True, zero_division=0)
     return get_score_from_report(report, metric)
 
 def sample_params(trial, cfg):

@@ -1,0 +1,37 @@
+model:
+  name: multihead_model1
+  hidden_dims: [256, 128]
+  dropout: 0.2
+  heads: # *targets resolved from heads
+      subcategory:
+        type: classification
+        out_dim: 15        # number of subcategory classes
+      priority:
+        type: binary
+        out_dim: 1         # number of priority classes
+      avariya:
+        type: binary
+        out_dim: 1
+
+features:
+  cats:
+    path: cat_features.npz
+    cardinalities: [22, 862, 5]
+    emb_dim: 16
+  times:
+    path: time_features.npz
+    mlp_dims: [32, 16]
+    input_dim: 7
+  text:
+    path: question_bge_m3.npz
+    mlp_dims: [256, 128]
+    input_dim: 1024
+
+training:
+  batch_size: 32
+  epochs: 2
+  lr: 0.0001
+  num_workers: 4
+
+# logging:
+#   level: INFO

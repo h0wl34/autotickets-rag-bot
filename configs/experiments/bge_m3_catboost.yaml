@@ -13,3 +13,4 @@ validation:
 
 max_samples: 300000
 full_train: True # use train + val splits for training
+class_weight: balanced   # handle imbalance (instead of manual weights)

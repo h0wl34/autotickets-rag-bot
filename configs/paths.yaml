@@ -1,8 +1,0 @@
-root: ../
-data_dir: ../data_dir
-feats_dir: ../data/features
-models_dir: ../models
-logs_dir: ../logs
-runs_dir: ../runs
-splits_dir: ../data/splits
-targets_dir: ../data/targets

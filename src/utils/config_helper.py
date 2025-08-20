@@ -3,7 +3,6 @@ from src.utils.io_utils import load_yaml
 from src.configs import paths
 
 BASE_CONFIG = load_yaml(paths.CONFIGS_DIR / "base.yaml")
-# PATHS = load_yaml("configs/paths.yaml")
 MODELS_CONFIG = load_yaml(paths.CONFIGS_DIR / "models.yaml")
 TARGETS_CONFIG = load_yaml(paths.CONFIGS_DIR / "targets.yaml")
 FEATURES_CONFIG = load_yaml(paths.CONFIGS_DIR / "features.yaml")
@@ -46,19 +45,19 @@ def get_model_params(model_name: str, override: dict = None):
 def get_target(target_name: str | None):    
     if target_name is None:
         return BASE_CONFIG["target"]
-    if target_name not in  TARGETS_CONFIG["targets"]:
+    if target_name not in TARGETS_CONFIG["targets"]:
         raise ValueError(f"Unknown target: {target_name}")
     
     return target_name
 
 
-def resolve_config(exp_path=None, overrides=None):
+def resolve_config(config_path=None, overrides=None):
     """
     Load defaults + experiment file + CLI overrides
     """
     cfg = deepcopy(BASE_CONFIG)
-    if exp_path:
-        exp_cfg = load_yaml(exp_path)
+    if config_path:
+        exp_cfg = load_yaml(config_path)
         cfg.update(exp_cfg)
 
     if overrides:
@@ -70,5 +69,18 @@ def resolve_config(exp_path=None, overrides=None):
 
     cfg["features"] = get_features(cfg.get("features"))
     cfg["target"] = get_target(cfg.get("target")) 
+
+    return cfg
+
+def resolve_dl_config(config_path):
+    cfg = load_yaml(config_path)
+    
+    if "training" not in cfg:
+        raise ValueError("DL config must have 'training' section (batch_size, lr, epochs, etc.)")
+    if "heads" not in cfg["model"]["params"]:
+        raise ValueError("DL model config must specify 'heads' dictionary")
+    
+    cfg["targets"] = [k for k,v in cfg["model"]["params"]["heads"].items()]
+    
 
     return cfg

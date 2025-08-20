@@ -1,0 +1,29 @@
+seed: 42
+
+target: priority
+features:
+  - cat_features.npz
+  - time_features.npz
+  - question_bge_m3.npz
+
+validation:
+  n_splits: 5 
+  stratify_by: priority
+
+model:
+  name: catboost
+  params:
+    loss_function: Logloss
+    eval_metric: TotalF1
+    learning_rate: 0.1
+    depth: 7
+    l2_leaf_reg: 3.0
+    iterations: 2000
+    verbose: 10
+    thread_count: -1
+    border_count: 128
+    early_stopping_rounds: 30
+
+max_samples: Null
+full_train: true
+class_weight: balanced

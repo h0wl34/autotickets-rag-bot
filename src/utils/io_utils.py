@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 import yaml
 import sys
 import logging
@@ -16,6 +16,17 @@ def load_yaml(path):
 def save_yaml(data, path):
     with open(path, "w") as f:
         yaml.dump(data, f)
+        
+        
+def save_json(obj: dict[str, Any] | list, path: Path) -> None:
+    ensure_dir(path.parent)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2, ensure_ascii=False)
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def ensure_dir(path: Path) -> None:
@@ -71,13 +82,3 @@ class TeeStream:
     def flush(self):
         self.stream.flush()
     
-
-def save_json(obj: Dict[str, Any] | list, path: Path) -> None:
-    ensure_dir(path.parent)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(obj, f, indent=2, ensure_ascii=False)
-
-
-def read_json(path: Path) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)

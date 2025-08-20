@@ -1,15 +1,16 @@
 import numpy as np
 import pandas as pd
-from typing import List
 from pathlib import Path
-from typing import Tuple, List
 from scipy.sparse import hstack, csr_matrix, issparse
 from src.configs.paths import PATHS
 from src.utils.config_helper import TARGETS_CONFIG
 
 
-def load_features(feature_files: List[str], output_format: str = "sparse"):
+def load_features(feature_files: list[str] | str, output_format: str = "sparse"):
     """Универсальная загрузка с выбором формата."""
+    if isinstance(feature_files, str):
+        feature_files = [feature_files]
+
     sparse, dense = load_features_separately(feature_files)
     
     if output_format == "sparse":
@@ -19,8 +20,31 @@ def load_features(feature_files: List[str], output_format: str = "sparse"):
     else:
         raise ValueError("Формат должен быть 'sparse' или 'dense'")
 
+    
+def load_target(target_name: str) -> np.ndarray:
+    target_col = TARGETS_CONFIG["targets"].get(target_name)
+    if target_col is None:
+        raise ValueError(f"Unknown target: {target_name}")
+    
+    df = pd.read_csv(PATHS["targets_dir"] / "targets.csv")
+    return df[target_col].values
 
-def combine_to_sparse(sparse: List[csr_matrix], dense: List[np.ndarray]) -> csr_matrix:
+
+def load_split(split_name: str) -> np.ndarray:
+    '''Loads a split as a np array of indices'''
+    return np.load(PATHS["splits_dir"] / f"{split_name}.npy")
+
+
+def load_stratify_vector(target_name: str) -> np.ndarray:
+    target_col = TARGETS_CONFIG["targets"].get(target_name)
+    if target_col is None:
+        raise ValueError(f"Unknown target: {target_name}")
+
+    df = pd.read_csv(PATHS["targets_dir"] / "targets.csv")
+    return df[target_col].values
+
+
+def combine_to_sparse(sparse: list[csr_matrix], dense: list[np.ndarray]) -> csr_matrix:
     """Объединяет sparse и dense фичи в единую sparse-матрицу."""
     if dense:
         # Конвертируем dense в sparse и объединяем
@@ -31,7 +55,7 @@ def combine_to_sparse(sparse: List[csr_matrix], dense: List[np.ndarray]) -> csr_
     return combined.tocsr()  # На выходе sparse
 
 
-def combine_to_dense(sparse: List[csr_matrix], dense: List[np.ndarray]) -> np.ndarray:
+def combine_to_dense(sparse: list[csr_matrix], dense: list[np.ndarray]) -> np.ndarray:
     """Объединяет все фичи в единую dense-матрицу."""
     if sparse:
         # Конвертируем sparse OHE в dense
@@ -42,7 +66,7 @@ def combine_to_dense(sparse: List[csr_matrix], dense: List[np.ndarray]) -> np.nd
     return combined  # На выходе dense
 
 
-def load_features_separately(feature_files: List[str]) -> Tuple[List[csr_matrix], List[np.ndarray]]:
+def load_features_separately(feature_files: list[str]) -> tuple[list[csr_matrix], list[np.ndarray]]:
     """Загружает фичи, разделяя их на sparse (OHE) и dense (эмбеддинги)."""
     sparse_matrices = []
     dense_matrices = []
@@ -74,26 +98,6 @@ def load_npz_feature(fpath):
         first = first.item()
     # If it's already a scipy sparse matrix, fine
     return first
-    
-def load_target(target_name: str) -> np.ndarray:
-    target_col = TARGETS_CONFIG["targets"].get(target_name)
-    if target_col is None:
-        raise ValueError(f"Unknown target: {target_name}")
-    
-    df = pd.read_csv(PATHS["targets_dir"] / "targets.csv")
-    return df[target_col].values
-
-def load_split(split_name: str) -> np.ndarray:
-    '''Loads a split as a np array of indices'''
-    return np.load(PATHS["splits_dir"] / f"{split_name}.npy")
-
-def load_stratify_vector(target_name: str) -> np.ndarray:
-    target_col = TARGETS_CONFIG["targets"].get(target_name)
-    if target_col is None:
-        raise ValueError(f"Unknown target: {target_name}")
-
-    df = pd.read_csv(PATHS["targets_dir"] / "targets.csv")
-    return df[target_col].values
 
 def subset_by_idx(X, idx: np.ndarray): 
     '''Subset X by row indices idx, handling dense and sparse arrays efficiently.'''

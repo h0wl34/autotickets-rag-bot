@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
 import joblib
 from catboost import CatBoostClassifier
 # from lightgbm import LGBMClassifier
@@ -14,7 +13,7 @@ from typing import Self
 class ModelBundle:
     model: object
     model_type: str
-    params: Dict
+    params: dict
 
     def save(self, out_dir: Path):
         ensure_dir(out_dir)
@@ -62,7 +61,7 @@ class ModelBundle:
             params=params
         )
 
-def build_model(model_type: str, params: Dict):
+def build_model(model_type: str, params: dict):
     mt = model_type.lower()
     if mt in {"catboost", "catboostclassifier", "cat"}:
         return CatBoostClassifier(**params)

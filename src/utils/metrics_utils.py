@@ -1,9 +1,8 @@
-from typing import Dict
 from sklearn.metrics import classification_report, confusion_matrix
 
 
-def compute_metrics(y_true, y_pred) -> Dict:
-    report = classification_report(y_true, y_pred, output_dict=True)
+def compute_metrics(y_true, y_pred) -> dict:
+    report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
     return {
         "accuracy": report["accuracy"],
         "f1_macro": report["macro avg"]["f1-score"],
@@ -13,8 +12,8 @@ def compute_metrics(y_true, y_pred) -> Dict:
         # "confusion_matrix": confusion_matrix(y_true, y_pred).tolist()
     }
 
-def full_report(y_true, y_pred) -> Dict:
-    rep = classification_report(y_true, y_pred, output_dict=True)
+def full_report(y_true, y_pred) -> dict:
+    rep = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
     cm = confusion_matrix(y_true, y_pred).tolist()
     rep["confusion_matrix"] = cm
     return rep

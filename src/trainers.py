@@ -5,7 +5,7 @@ from sklearn.metrics import classification_report
 from .utils.model_utils import build_model
 
 
-def train_on_split(model_name, params, X_train, y_train, X_val=None, y_val=None, class_weight=None):
+def train_on_split(model_name, params, X_train, y_train, X_val=None, y_val=None, class_weight: str | list | None =None):
     """
     Train a model on a train/val split, with optional class weighting.
     """
@@ -31,11 +31,11 @@ def train_on_split(model_name, params, X_train, y_train, X_val=None, y_val=None,
     metrics = {}
     if X_val is not None and y_val is not None:
         y_pred = model.predict(X_val)
-        metrics = classification_report(y_val, y_pred, output_dict=True)
-    
+        metrics = classification_report(y_val, y_pred, output_dict=True, zero_division=0)
+
     return model, metrics
 
-def train_kfold(model_name, params, X, y, n_splits=5, stratify=None, random_state=42, class_weight=None):
+def train_kfold(model_name, params, X, y, n_splits=5, stratify=None, random_state=42, class_weight: str | list | None =None):
     '''Used for cross-validation training'''
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
