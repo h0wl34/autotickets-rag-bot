@@ -1,5 +1,5 @@
 # Таргеты (колонки в targets.csv)
 targets:
-  subcategory: SUBCATEGORY_CLEAN_enc
-  priority: PRIORITY_enc
+  subcategory: SUBCATEGORY_clean_enc
+  priority: PRIORITY
   avariya: AVARIYA_enc

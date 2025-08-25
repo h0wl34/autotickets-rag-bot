@@ -13,7 +13,7 @@ from src.utils.io_utils import get_logger, save_json, load_yaml
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run_path", type=str, required=True,
+    parser.add_argument("--state_path", type=str, required=True,
                         help="Path to the experiment directory (model + config)")
     parser.add_argument("--split", type=str, default="val", choices=["train", "val", "test"])
     parser.add_argument("--threshold", type=float, default=0.5,
@@ -24,7 +24,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    run_path = Path(args.run_path)
+    run_path = Path(args.state_path).parent
     cfg = load_yaml(run_path / "config.yaml")
     logger = get_logger("eval", out_dir=run_path)
 
@@ -36,7 +36,7 @@ def main():
     )
     
     device = torch_directml.device()
-    state = torch.load(run_path / "best_model_with_metrics.pt", map_location="cpu") # first load to cpu
+    state = torch.load(args.state_path, map_location="cpu", weights_only=False) # first load to cpu
     model.load_state_dict(state["model_state"] if "model_state" in state else state) # instantiate
     model.to(device) # only then move to gpu
     model.eval()

@@ -73,3 +73,5 @@ torch_container/
 models/*
 data/*
 runs/*
+
+*.zip

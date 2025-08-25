@@ -1,15 +1,17 @@
 import argparse
 from torch.utils.data import ConcatDataset
+import torch
 
 from src.utils.io_utils import get_logger, load_yaml
-from src.pipelines.dl_trainer import DLTrainer
+from src.training.dl_trainer import DLTrainer
 from src.models.multihead_model import MultiHeadModel
-from src.datasets.ticket_dataset import TicketDataset
+from src.data.ticket_dataset import TicketDataset
 
 
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, default=None, help="Путь к файлу конфигурации")
+    p.add_argument("--checkpoint", type=str, default=None, help="Путь к директории с чекпоинтом")
     p.add_argument("--full_dataset", action="store_true", help="Использовать полный датасет (train + val)")
     return p.parse_args()
 
@@ -41,6 +43,15 @@ def main():
         hidden_dims=cfg["model"]["hidden_dims"]
     )
     
+    checkpoint = None
+    if args.checkpoint is not None:
+        checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False) 
+        logger.info("Loading checkpoint...")
+        model_state = checkpoint.get("model_state")
+        opt_state = checkpoint.get("optimizer_state")
+        model_state = model_state if model_state is not None else checkpoint
+        checkpoint = {"model_state": model_state, "optimizer_state": opt_state}
+    
     if (args.full_dataset):
         full_dataset = ConcatDataset([train_dataset, val_dataset])
         trainer = DLTrainer(
@@ -48,7 +59,9 @@ def main():
             train_dataset=full_dataset,
             val_dataset=None,
             cfg=cfg,
-            out_dir="../runs/dl"
+            out_dir="./runs/dl",
+            checkpoint=checkpoint
+            
         )
         logger.info("Using full dataset for training")
     else:
@@ -57,7 +70,8 @@ def main():
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             cfg=cfg,
-            out_dir="../runs/dl"
+            out_dir="./runs/dl",
+            checkpoint=checkpoint
         )
 
     trainer.fit()

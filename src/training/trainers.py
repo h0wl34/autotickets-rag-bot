@@ -1,7 +1,7 @@
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.metrics import classification_report
-from .utils.model_utils import build_model
+from ..utils.model_utils import build_model
 
 
 def train_on_split(model_name, params, X_train, y_train, X_val=None, y_val=None, class_weight: str | list | None =None):

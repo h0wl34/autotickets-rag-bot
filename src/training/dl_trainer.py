@@ -12,7 +12,7 @@ from src.models.multihead_model import MultiHeadModel
 
 
 class DLTrainer:
-    def __init__(self, model, train_dataset, cfg, out_dir, val_dataset=None):
+    def __init__(self, model, train_dataset, cfg, out_dir, checkpoint: dict = None, val_dataset=None):
         self.model: MultiHeadModel = model
         self.cfg: dict = cfg
         
@@ -23,10 +23,35 @@ class DLTrainer:
         ensure_dir(self.run_dir)
         
         self.logger = get_logger("DLTrainer", self.run_dir, tee_stdout=False)
-        save_yaml(self.cfg, self.run_dir / "config.yaml")
+        save_yaml(self.cfg, self.run_dir / "resolved_config.yaml")
 
         self.device = self._find_best_device()
-        self.model.to(self.device)
+        self.model.to(self.device)  # move first
+        
+        self.optimizer = torch.optim.AdamW(
+            self.model.parameters(),
+            lr=cfg["training"].get("lr", 1e-4)
+        ) 
+        
+        if checkpoint is not None:
+            model_state = checkpoint.get("model_state")
+            if model_state is None:
+                self.logger.info("No model state found, skipping")
+            else:
+                self.model.load_state_dict(checkpoint["model_state"])
+                self.logger.info("Loaded model state")
+                
+            optimizer_state = checkpoint.get("optimizer_state")
+            if optimizer_state is None:
+                self.logger.info("No optimizer state found, skipping")
+            else:    
+                self.optimizer.load_state_dict(checkpoint["optimizer_state"])
+                # Ensure optimizer params are on the right device
+                for state in self.optimizer.state.values():
+                    for k, v in state.items():
+                        if torch.is_tensor(v):
+                            state[k] = v.to(self.device)
+                self.logger.info("Loaded optimizer state")
 
         self.train_loader = DataLoader(
             train_dataset,
@@ -40,11 +65,7 @@ class DLTrainer:
             shuffle=False,
             num_workers=cfg["training"].get("num_workers", 2)
         ) if val_dataset is not None else None
-        
-        self.optimizer = torch.optim.AdamW(
-            self.model.parameters(),
-            lr=cfg["training"].get("lr", 1e-4)
-        )
+             
         self.epochs = cfg["training"].get("epochs", 10)
 
     def train_epoch(self):
@@ -55,7 +76,7 @@ class DLTrainer:
             self.optimizer.zero_grad()
             
             outputs = self.model(inputs)  # dict: {"subcategory": ..., "priority": ..., "avariya": ...}
-            loss = self._compute_loss(outputs, targets)
+            loss = self._compute_loss(outputs, targets, )
 
             loss.backward()
             self.optimizer.step()
@@ -110,7 +131,7 @@ class DLTrainer:
                     if cfg.get("type") in ["classification", "binary"]]
 
         self.logger.info(f"Starting training, {self.epochs} epochs")
-
+        
         for epoch in tqdm(range(1, self.epochs + 1), desc="Epochs", leave=True):
             self.logger.info(f"Starting epoch {epoch}")
             train_loss = self.train_epoch()
@@ -143,32 +164,56 @@ class DLTrainer:
                 torch.save(checkpoint, self.run_dir / "best_model_with_metrics.pt")
                 save_json(metrics, self.run_dir / "best_model_metrics.json")
                 self.logger.info(f"Saved new best model to {self.run_dir / 'best_model_with_metrics.pt' }")
-
-        # Final save
+            else: 
+                checkpoint = {
+                    "model_state": self.model.state_dict(),
+                    "optimizer_state": self.optimizer.state_dict(),
+                    "epoch": epoch
+                }
+                checkpoint_path = self.run_dir/'intermediate_checkpoint.pt'
+                torch.save(checkpoint, checkpoint_path)
+                self.logger.info(f"Intermediate checkpoint saved to {checkpoint_path}")
+        
         final_model_path = self.run_dir / "final_model.pt"
+        # Final save
         if best_state is not None:
             self.model.load_state_dict(best_state)
         torch.save(self.model.state_dict(), final_model_path)
         self.logger.info(f"Final model saved to {final_model_path}")
 
         if best_val != -np.inf:
-            self.logger.info(f"Best val f1: {best_val:.4f}")
-
-
+            self.logger.info(f"Best val f1: {best_val:.4f}")        
+    
     def _compute_loss(self, outputs, targets):
-        loss = 0
-        for head_name, logits in outputs.items():
+        total_loss = 0.0
+
+        for head_name, head_cfg in self.model.heads_config.items():
+            pred = outputs[head_name]
             target = targets[head_name].to(self.device)
-            head_type = self.model.heads_config[head_name]["type"]
+            loss_weight = head_cfg.get("loss_weight", 1)
 
-            if head_type == "classification":
-                loss += nn.CrossEntropyLoss()(logits, target)
-            elif head_type == "binary":
-                loss += nn.BCEWithLogitsLoss()(logits, target)
-            elif head_type == "regression":
-                loss += nn.MSELoss()(logits, target)
+            if head_cfg["type"] == "binary":
+                loss_fn = nn.BCEWithLogitsLoss()
+                # pred shape [batch] or [batch,1], target shape [batch]
+                loss = loss_fn(pred.squeeze(-1), target.float())
 
-        return loss
+            elif head_cfg["type"] == "classification":
+                # Check if class_weights exist in schema
+                if "class_weights" in head_cfg and head_cfg["class_weights"] is not None:
+                    weights = torch.tensor(head_cfg["class_weights"], dtype=torch.float32).to(self.device)
+                    loss_fn = nn.CrossEntropyLoss(weight=weights)
+                else:
+                    loss_fn = nn.CrossEntropyLoss()
+                
+                # CrossEntropy expects logits [batch, num_classes], targets [batch]
+                loss = loss_fn(pred, target.long())
+
+            else:
+                raise ValueError(f"Unsupported head type: {head_cfg['type']}")
+
+            total_loss += loss * loss_weight
+
+        return total_loss
 
     def _find_best_device(self):
         if torch.cuda.is_available():

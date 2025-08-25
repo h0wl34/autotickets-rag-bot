@@ -1,6 +1,6 @@
 import argparse
 from src.utils.config_helper import resolve_config
-from src.pipelines.train_pipeline import TrainingPipeline
+from src.training.table_trainer import TableTrainer
 
 
 def parse_args():
@@ -25,7 +25,7 @@ def main():
     
     cfg = resolve_config(args.config, overrides=overrides)
     
-    pipeline = TrainingPipeline(cfg)
+    pipeline = TableTrainer(cfg)
     if (args.kfold):
         pipeline.run_kfold()
     else:
