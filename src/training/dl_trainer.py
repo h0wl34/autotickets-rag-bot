@@ -76,7 +76,7 @@ class DLTrainer:
             self.optimizer.zero_grad()
             
             outputs = self.model(inputs)  # dict: {"subcategory": ..., "priority": ..., "avariya": ...}
-            loss = self._compute_loss(outputs, targets, )
+            loss = self._compute_loss(outputs, targets)
 
             loss.backward()
             self.optimizer.step()
@@ -193,8 +193,13 @@ class DLTrainer:
             loss_weight = head_cfg.get("loss_weight", 1)
 
             if head_cfg["type"] == "binary":
-                loss_fn = nn.BCEWithLogitsLoss()
-                # pred shape [batch] or [batch,1], target shape [batch]
+                pos_weight = None
+                if "class_weights" in head_cfg and head_cfg["class_weights"] is not None:
+                    w0, w1 = head_cfg["class_weights"]  # веса из compute_class_weight
+                    pos_weight = torch.tensor([w1 / w0], dtype=torch.float32, device=self.device)
+                    
+                loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+                # pred shape [batch,1], target shape [batch]
                 loss = loss_fn(pred.squeeze(-1), target.float())
 
             elif head_cfg["type"] == "classification":

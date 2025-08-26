@@ -24,12 +24,13 @@ class TicketDataset(Dataset):
             split_name: "train", "val", "test"
         """
         self.idx = load_split(split_name)
+        self.idx = self.idx[:10000]
         self.features = {}
         
         for feat_name, file_path in feature_files.items():
             X = load_features(file_path, output_format="dense")
             # cat features -> LongTensor
-            if feat_name == "cats":
+            if feat_name in ['oe_cats', 'bin_cats']:
                 self.features[feat_name] = torch.tensor(X[self.idx], dtype=torch.long)
             else:
                 self.features[feat_name] = torch.tensor(X[self.idx], dtype=torch.float32)

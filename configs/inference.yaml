@@ -1,0 +1,82 @@
+model:
+  name: multihead_model_tower
+  hidden_dims: [256, 128] 
+  
+  # Feature input dimensions
+  features:
+    cats:
+      cardinalities: [22, 862, 5]   # S_NAME, CATEGORY, SUBCATEGORY_clean
+      emb_dim: 16
+    times:
+      input_dim: 7                  # OPEN_TIME_ hour/day features
+      mlp_dims: [32, 16]
+    text:
+      input_dim: 1024               # embedding dimension from SentenceTransformer
+      mlp_dims: [256, 128]
+
+  # Output heads
+  heads:
+    subcategory:
+      type: classification
+      out_dim: 15
+      tower_dims: [128]
+      loss_weight: 10
+    priority:
+      type: binary
+      out_dim: 1
+    avariya:
+      type: binary
+      out_dim: 1
+
+# Preprocessing / cleaning
+preprocessing:
+  text_col: QUESTION_clean
+  categorical: [S_NAME, REG, SOURCE]
+  time: [OPEN_TIME_]
+  embedding_model_path: "sentence_transformers/bge-multi-3"
+  cat_encoders:
+    S_NAME: "../models/vectorizers/S_NAME_oenc.pkl"
+    REG: "../models/vectorizers/REG_oenc.pkl"
+    SOURCE: "../models/vectorizers/SOURCE_oenc.pkl"
+
+  sensitive_patterns:
+    EMAIL: "\\b[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\\.)+[A-Za-z]{2,}\\b"
+    PHONE: "\\b(?:\\+7|8)?[\\s-]?\\(?\\d{3,4}\\)?[\\s-]?\\d{2,3}[\\s-]?\\d{2}[\\s-]?\\d{2}\\b"
+    INN: "(?i)инн\\s*\\d{5,12}"
+    VIN: "\\b[A-HJ-NPR-Z0-9]{17}\\b"
+    INCEDENT: "\\bIM\\d{8,12}\\b"
+    REG_NUMBER: "\\b[АВЕКМНОРСТУХ]{1,3}\\d{3,4}[АВЕКМНОРСТУХ]{2}\\b"
+    CASE_NO: "\\b(?:[CcSs]D|T)\\d{6,10}\\b"
+    APPEAL_NO: "\\b\\d/\\d{9,12}\\b"
+    DOC_NO: "№\\s?\\d{1,6}([/\\-]?\\d{1,6})?([А-ЯA-Z])?"
+    LONG_ID: "\\b\\d{9,}\\b|\\b[a-f0-9]{32,128}\\b|(?:UID|GlndID|GUID)[: ]?[0-9a-fA-F\\-]{16,128}"
+    IP: "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b"
+    DATE: "\\b\\d{2}[./-]\\d{2}[./-]\\d{2,4}(?:\\s?г\\.?)*"
+    FIO: "\\b[А-ЯЁ][а-яё]+ [А-ЯЁ]\\.[А-ЯЁ]\\.(?=[\\s,.)/]|$)"
+    USERNAME: "\\b[a-zA-Z][a-zA-Z0-9]{3,15}\\d\\b"
+    TOKEN: "\\b[a-f0-9]{16,64}\\b|\\b(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)[A-Za-z0-9]{12,64}\\b"
+    URL: "https?://[^\\s]+"
+
+  TEXT_PLACEHOLDER: "[NO_TEXT]"
+  EMPTY_QUESTION_MARKERS: ["nan","Nan","None","Null","пусто","отсутствует текст описание пустое","fwd: описание пустое","пустое описание","отсутствует текст","отсутствует","нету","нет"]
+  SERVICE_MARKERS:
+    - "The mail"
+    - "Уведомляющий Сервер"
+    - "Postfix Queue ID"
+    - "Postfix Sender"
+    - "Arrival Date"
+    - "Recipient:"
+    - "Original Recipient:"
+    - "Diagnostic Code"
+    - "in reply to RCPT TO command"
+    - "Mail received:"
+    - "Message ID:"
+    - "Mail server"
+    - "Receive Notification Mail"
+
+# ------------------------
+# Optional: inference / deployment settings
+# ------------------------
+inference:
+  device: "cpu"     # or "cuda"
+  batch_size: 1

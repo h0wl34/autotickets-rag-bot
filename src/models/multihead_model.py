@@ -10,16 +10,20 @@ class MultiHeadModel(nn.Module):
     ):
         super().__init__()
 
-        # --- cat features mlp ---
+        # --- oe-encoded cat features ---
         self.cat_embeddings = nn.ModuleList()
         cat_out_dim = 0
-        if "cats" in feature_config:
-            for card in feature_config["cats"]["cardinalities"]:
-                emb_dim = feature_config["cats"].get("emb_dim", 16)
+        if "oe_cats" in feature_config:
+            for card in feature_config["oe_cats"]["cardinalities"]:
+                emb_dim = feature_config["oe_cats"].get("emb_dim", 16)
                 self.cat_embeddings.append(nn.Embedding(card + 1, emb_dim)) # reserved N+1 emb for new classes
                 cat_out_dim += emb_dim
+                
+        # --- binary cat features ---
+        self.bin_cat_dim = feature_config.get("bin_cats", {}).get("input_dim", 0)
+        cat_out_dim += self.bin_cat_dim
         
-        # --- time features mlp ---
+        # --- time features ---
         self.time_mlp = None
         time_out_dim = 0
         if "times" in feature_config:
@@ -34,7 +38,7 @@ class MultiHeadModel(nn.Module):
             self.time_mlp = nn.Sequential(*layers)
             time_out_dim = dims[-1]
             
-        # --- text features mlp ---
+        # --- text features ---
         self.text_mlp = None
         text_out_dim = 0
         if "text" in feature_config:
@@ -83,18 +87,43 @@ class MultiHeadModel(nn.Module):
             
 
     def forward(self, x: dict):
-        # энкодинг
-        cats, times, text_emb = x["cats"], x["times"], x["text"]
+        fused_parts = []
 
-        cat_feats = torch.cat([emb(cats[:, i]) for i, emb in enumerate(self.cat_embeddings)], dim=-1)
-        time_feats = self.time_mlp(times)
-        text_feats = self.text_mlp(text_emb)
+        # --- oe + bin cats ---
+        if len(self.cat_embeddings) > 0:
+            cat_feats_oe = torch.cat([emb(x["oe_cats"][:, i]) 
+                                    for i, emb in enumerate(self.cat_embeddings)], dim=-1)
+        else:
+            cat_feats_oe = None
 
-        fused = torch.cat([f for f in [cat_feats, time_feats, text_feats] if f.nelement() > 0], dim=-1)
+        bin_cats = x.get("bin_cats")
+        if cat_feats_oe is not None and bin_cats is not None:
+            cat_feats = torch.cat([cat_feats_oe, bin_cats], dim=-1)
+        elif cat_feats_oe is not None:
+            cat_feats = cat_feats_oe
+        elif bin_cats is not None:
+            cat_feats = bin_cats
+        else:
+            cat_feats = None
+
+        if cat_feats is not None:
+            fused_parts.append(cat_feats)
+
+        # --- time features ---
+        if self.time_mlp is not None and "times" in x:
+            fused_parts.append(self.time_mlp(x["times"]))
+
+        # --- text features ---
+        if self.text_mlp is not None and "text" in x:
+            fused_parts.append(self.text_mlp(x["text"]))
+
+        # --- fusion ---
+        fused = torch.cat(fused_parts, dim=-1)
         fused = self.fusion_mlp(fused)
 
-        # heads
+        # --- heads ---
         outputs = {}
         for name, head in self.heads.items():
             outputs[name] = torch.squeeze(head(fused), dim=-1)
         return outputs
+

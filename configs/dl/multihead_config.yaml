@@ -6,32 +6,55 @@ model:
       subcategory:
         type: classification
         tower_dims: [128]
-        out_dim: 15        # number of subcategory classes
-        class_weights: [0.159936475, 0.007146178, 0.0168575216, 1.92460353,
-                    0.497993185, 0.403341725, 0.252353294, 0.118571387,
-                    0.3196717, 8.67479836, 0.979258626, 0.471081765,
-                    0.00856211261, 0.0214652753, 1.14435886]
-        loss_weight: 10
+        out_dim: 14        # number of subcategory classes
+        class_weights: [
+          4.478561908992829,
+          0.19927264286646143,
+          0.47579515282765206,
+          54.493204633204634,
+          14.09964035964036,
+          11.429980563654032,
+          7.123546394250182,
+          3.3532606629666235,
+          9.020439206462829,
+          245.88397212543555,
+          27.74144979951254,
+          13.349103359564165,
+          0.1729794587704677,
+          29.035837722185647
+        ]
+        # loss_weight: 10
       priority:
         type: binary
-        out_dim: 1         # number of priority classes
+        out_dim: 1      # number of priority classes
+        class_weights: [
+          4.630431359168515,
+          0.5605263659557163
+        ]
       avariya:
         type: binary
         out_dim: 1
+        class_weights: [
+          0.5080437543375655,
+          31.580014320236284
+        ]
 
-  features:
-    cats:
-      path: cat_features.npz
-      cardinalities: [22, 862, 5]
-      emb_dim: 16
-    times:
-      path: time_features.npz
-      mlp_dims: [32, 16]
-      input_dim: 7
-    text:
-      path: question_bge_m3.npz
-      mlp_dims: [256, 128]
-      input_dim: 1024
+features:
+  oe_cats:
+    path: oe_cat_features.npz
+    cardinalities: [23, 881, 6] # S_NAME, REG, SOURCE
+    emb_dim: 16
+  bin_cats:
+    path: bin_cat_features.npz
+    input_dim: 17 # 16 sensitive + HAS_TEXT
+  times:
+    path: time_features.npz
+    mlp_dims: [32, 16]
+    input_dim: 7
+  # text:
+  #   path: question_bge_m3.npz
+  #   mlp_dims: [256, 128]
+  #   input_dim: 1024
 
 training:
   batch_size: 32

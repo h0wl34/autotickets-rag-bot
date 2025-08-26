@@ -5,8 +5,7 @@ from pathlib import Path
 from sklearn.metrics import classification_report, mean_squared_error, mean_absolute_error, r2_score
 import numpy as np
 
-
-from src.datasets.ticket_dataset import TicketDataset
+from src.data.ticket_dataset import TicketDataset
 from src.models.multihead_model import MultiHeadModel
 from src.utils.io_utils import get_logger, save_json, load_yaml
 
@@ -25,7 +24,7 @@ def main():
     args = parse_args()
 
     run_path = Path(args.state_path).parent
-    cfg = load_yaml(run_path / "config.yaml")
+    cfg = load_yaml(run_path / "resolved_config.yaml")
     logger = get_logger("eval", out_dir=run_path)
 
     # Load model

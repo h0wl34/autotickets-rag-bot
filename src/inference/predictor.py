@@ -18,13 +18,13 @@ class Predictor:
         self.model.load_state_dict(torch.load(cfg['model']['path'], map_location=device))
         self.model.to(device).eval()
         
-        self.preproc = Preprocessor()
-        self.fe = FeatureEngineer(cfg)
+        self.preproc = Preprocessor(cfg['preprocessing'])
+        self.fe = FeatureEngineer(cfg['preprocessing'])
 
     def predict(self, sample: dict):
         # sample: {"QUESTION": ..., "TITLE": ..., "S_NAME": ..., ...}
         df = pd.DataFrame([sample])
-        df = self.preproc.clean_dataframe(df, [self.cfg["text_col"]])
+        df = self.preproc.clean_dataframe(df)
         
         X_cat, X_time, X_text = self.fe.transform(df)
         cats = torch.tensor(X_cat, dtype=torch.float32).to(self.device)
