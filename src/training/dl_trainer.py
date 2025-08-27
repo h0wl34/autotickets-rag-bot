@@ -70,7 +70,7 @@ class DLTrainer:
         self.epochs = cfg["training"].get("epochs", 10)
         
         num_training_steps = len(self.train_loader) * self.epochs
-        num_warmup_steps = int(0.1 * num_training_steps)
+        num_warmup_steps = int(0.2 * num_training_steps)
         
         self.scheduler = get_cosine_schedule_with_warmup(
             self.optimizer, num_warmup_steps=num_warmup_steps, num_training_steps=num_training_steps

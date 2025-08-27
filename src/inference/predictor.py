@@ -9,7 +9,7 @@ from src.utils.io_utils import get_logger, load_yaml
 
 
 class Predictor:
-    def __init__(self, cfg: dict, device: str):
+    def __init__(self, cfg: dict, device: str=None):
         self.logger = get_logger('Predictor')
         self.device = device if device else self._find_best_device()
         self.cfg = cfg
@@ -21,20 +21,12 @@ class Predictor:
 
         self.model.load_state_dict(model_state)
         self.model.to(device).eval()
-        
-        self.preproc = Preprocessor(cfg['preprocessing'])
-        self.fe = FeatureEngineer(cfg['preprocessing'])
 
-    def predict(self, sample: dict):
-        # sample: {"QUESTION": ..., "TITLE": ..., "S_NAME": ..., ...}
-        df = pd.DataFrame([sample])
-        df = self.preproc.transform_dataframe(df)
-        
-        feats = self.fe.transform(df)
-        features = {k: v.to(self.device) for k, v in feats.items()}
+    def predict(self, feats_dict: dict):
+        features = {k: v.to(self.device) for k, v in feats_dict.items()}
         
         with torch.no_grad():
-            outputs = self.model(feats)
+            outputs = self.model(feats_dict)
         return {k: v.cpu().numpy() for k, v in outputs.items()}
     
     def _find_best_device(self):

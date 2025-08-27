@@ -71,7 +71,7 @@ class MultiHeadModel(nn.Module):
                 for h in tower_dims:
                     layers.append(nn.Linear(in_dim, h))
                     layers.append(nn.ReLU())
-                    if 'dropoout' in cfg:
+                    if 'dropout' in cfg:
                         layers.append(nn.Dropout(cfg['dropout']))
                     in_dim = h
                 layers.append(nn.Linear(in_dim, cfg["out_dim"]))
