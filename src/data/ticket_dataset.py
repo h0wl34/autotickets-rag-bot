@@ -24,7 +24,6 @@ class TicketDataset(Dataset):
             split_name: "train", "val", "test"
         """
         self.idx = load_split(split_name)
-        self.idx = self.idx[:10000]
         self.features = {}
         
         for feat_name, file_path in feature_files.items():

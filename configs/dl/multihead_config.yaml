@@ -1,11 +1,12 @@
 model:
   name: multihead_model_tower
   hidden_dims: [256, 128]
-  dropout: 0.2
-  heads: # *targets resolved from heads
+  # dropout: 0.2
+  heads: # targets resolved from heads
       subcategory:
         type: classification
         tower_dims: [128]
+        dropout: 0.1
         out_dim: 14        # number of subcategory classes
         class_weights: [
           4.478561908992829,
@@ -23,21 +24,21 @@ model:
           0.1729794587704677,
           29.035837722185647
         ]
-        # loss_weight: 10
+        loss_weight: 8
       priority:
         type: binary
         out_dim: 1      # number of priority classes
-        class_weights: [
-          4.630431359168515,
-          0.5605263659557163
-        ]
+        # class_weights: [
+        #   4.630431359168515,
+        #   0.5605263659557163
+        # ]
       avariya:
         type: binary
         out_dim: 1
-        class_weights: [
-          0.5080437543375655,
-          31.580014320236284
-        ]
+        # class_weights: [
+        #   0.5080437543375655,
+        #   31.580014320236284
+        # ]
 
 features:
   oe_cats:
@@ -51,15 +52,15 @@ features:
     path: time_features.npz
     mlp_dims: [32, 16]
     input_dim: 7
-  # text:
-  #   path: question_bge_m3.npz
-  #   mlp_dims: [256, 128]
-  #   input_dim: 1024
+  text:
+    path: question_bge_m3.npz
+    mlp_dims: [256, 128]
+    input_dim: 1024
 
 training:
   batch_size: 32
-  epochs: 10
-  lr: 0.0003
+  epochs: 20
+  lr: 0.0005
   num_workers: 10
 
 # logging:

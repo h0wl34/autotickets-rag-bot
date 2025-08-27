@@ -28,11 +28,7 @@ def main():
     logger = get_logger("eval", out_dir=run_path)
 
     # Load model
-    model = MultiHeadModel(
-        feature_config=cfg["features"],
-        heads_config=cfg["model"]["heads"],
-        hidden_dims=cfg["model"]["hidden_dims"]
-    )
+    model = MultiHeadModel(cfg)
     
     device = torch_directml.device()
     state = torch.load(args.state_path, map_location="cpu", weights_only=False) # first load to cpu

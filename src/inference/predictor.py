@@ -5,17 +5,21 @@ import pandas as pd
 from src.preprocessing.preprocess import Preprocessor
 from src.preprocessing.feature_engineering import FeatureEngineer
 from src.models.multihead_model import MultiHeadModel
-from src.utils.io_utils import get_logger
+from src.utils.io_utils import get_logger, load_yaml
 
 
 class Predictor:
-    def __init__(self, cfg, device="cpu"):
+    def __init__(self, cfg: dict, device: str):
         self.logger = get_logger('Predictor')
         self.device = device if device else self._find_best_device()
         self.cfg = cfg
         
-        self.model = MultiHeadModel(**cfg["model"])
-        self.model.load_state_dict(torch.load(cfg['model']['path'], map_location=device))
+        self.model = MultiHeadModel(load_yaml(cfg["model"]["cfg_path"]))
+        checkpoint = torch.load(cfg['model']['path'], map_location="cpu", weights_only=False)
+        model_state = checkpoint.get("model_state")
+        model_state = model_state if model_state is not None else checkpoint
+
+        self.model.load_state_dict(model_state)
         self.model.to(device).eval()
         
         self.preproc = Preprocessor(cfg['preprocessing'])
@@ -24,15 +28,13 @@ class Predictor:
     def predict(self, sample: dict):
         # sample: {"QUESTION": ..., "TITLE": ..., "S_NAME": ..., ...}
         df = pd.DataFrame([sample])
-        df = self.preproc.clean_dataframe(df)
+        df = self.preproc.transform_dataframe(df)
         
-        X_cat, X_time, X_text = self.fe.transform(df)
-        cats = torch.tensor(X_cat, dtype=torch.float32).to(self.device)
-        times = torch.tensor(X_time, dtype=torch.float32).to(self.device)
-        texts = torch.tensor(X_text, dtype=torch.float32).to(self.device)
+        feats = self.fe.transform(df)
+        features = {k: v.to(self.device) for k, v in feats.items()}
         
         with torch.no_grad():
-            outputs = self.model(cats, times, texts)
+            outputs = self.model(feats)
         return {k: v.cpu().numpy() for k, v in outputs.items()}
     
     def _find_best_device(self):

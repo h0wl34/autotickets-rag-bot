@@ -12,7 +12,7 @@ class FeatureEngineer:
         self.cat_encoders: dict[str, OrdinalEncoder] = {col: joblib.load(path) for col, path in cfg["cat_encoders"].items()}
         self.text_embedder = SentenceTransformer(cfg['embedding_model_path'])
 
-    def encode_cats(self, df: pd.DataFrame, cat_cols: list[str]):
+    def encode_cats(self, df: pd.DataFrame, cat_cols: list[str]) -> np.ndarray:
         cat_arrays = []
         for col in cat_cols:
             if col not in df.columns:
@@ -33,7 +33,7 @@ class FeatureEngineer:
     # def encode_priority(series):
     #     return series.fillna(2).astype(int)  
 
-    def extract_time_features(self, df: pd.DataFrame, time_cols: list[str]):
+    def extract_time_features(self, df: pd.DataFrame, time_cols: list[str]) -> np.ndarray:
         time_feats = []
         for col in time_cols:
             datetime_col = pd.to_datetime(df[col], errors='coerce')
@@ -53,33 +53,30 @@ class FeatureEngineer:
             
         return np.concatenate(time_feats, axis=1)
 
-    def encode_texts(self, df: pd.DataFrame, text_col: str):
+    def encode_texts(self, df: pd.DataFrame, text_col: str) -> np.ndarray:
         texts = df[text_col].tolist()
         embeddings = self.text_embedder.encode(texts, convert_to_tensor=False, convert_to_numpy=True)  
         return embeddings.astype(np.float32)
-
-    def _extract_sensitive_flags(self, text: str) -> dict:
-        flags = {f"HAS_{k}": 0 for k in self.cfg["sensitive_patterns"].keys()}
-        
-        if not isinstance(text, str) or text.strip() == "" or text == "[NO_TEXT]":
-            flags["HAS_TEXT"] = 0
-            return flags
-        
-        for placeholder in self.cfg["sensitive_patterns"].keys():
-            if placeholder in text:
-                flags[f"HAS_{placeholder}"] = 1
-        
-        flags["HAS_TEXT"] = 1
-        return flags
     
-    def resolve_sensitive_flags(self, df: pd.DataFrame, text_col: str):
-        return df[text_col].apply(self._extract_sensitive_flags).apply(pd.Series).to_numpy(dtype=np.float32)
+    def resolve_sensitive_flags(self, df: pd.DataFrame, text_col: str) -> np.ndarray:
+        def _flags(text):
+            flags = {f"HAS_{k}": 0 for k in self.cfg["SENSITIVE_PATTERNS"].keys()}
+            if not isinstance(text, str) or text in ["", "[NO_TEXT]"]:
+                flags["HAS_TEXT"] = 0
+                return list(flags.values())
+            for placeholder in self.cfg["SENSITIVE_PATTERNS"].keys():
+                if f"[{placeholder}]" in text:
+                    flags[f"HAS_{placeholder}"] = 1
+            flags["HAS_TEXT"] = 1
+            return list(flags.values())
 
-    def transform(self, df: pd.DataFrame):
+        return np.stack(df[text_col].apply(_flags).values).astype(np.float32)
+
+    def transform(self, df: pd.DataFrame) -> dict:
         oe_cats = self.encode_cats(df, self.cfg['categorical'])
-        bin_cats = self.resolve_sensitive_flags(df, self.cfg['text_col'])    
+        bin_cats = self.resolve_sensitive_flags(df, self.cfg['emb_text_col'])    
         times = self.extract_time_features(df, self.cfg['time'])
-        text_emb = self.encode_texts(df, self.cfg['text_col'])
+        text_emb = self.encode_texts(df, self.cfg['emb_text_col'])
         
         return {
             "oe_cats": torch.from_numpy(oe_cats).long(),

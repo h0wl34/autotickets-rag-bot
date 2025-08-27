@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from datetime import datetime
 from tqdm import tqdm
+from transformers import get_cosine_schedule_with_warmup
 
 from src.utils.io_utils import get_logger, ensure_dir, save_json, save_yaml
 from sklearn.metrics import classification_report
@@ -67,6 +68,13 @@ class DLTrainer:
         ) if val_dataset is not None else None
              
         self.epochs = cfg["training"].get("epochs", 10)
+        
+        num_training_steps = len(self.train_loader) * self.epochs
+        num_warmup_steps = int(0.1 * num_training_steps)
+        
+        self.scheduler = get_cosine_schedule_with_warmup(
+            self.optimizer, num_warmup_steps=num_warmup_steps, num_training_steps=num_training_steps
+        )
 
     def train_epoch(self):
         self.model.train()
@@ -80,6 +88,7 @@ class DLTrainer:
 
             loss.backward()
             self.optimizer.step()
+            self.scheduler.step()
             total_loss += loss.item()
         return total_loss / len(self.train_loader)
 

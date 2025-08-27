@@ -1,45 +1,49 @@
 model:
   name: multihead_model_tower
-  hidden_dims: [256, 128] 
+  path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-27_10-33-21_multihead_model_tower\intermediate_checkpoint.pt
+  cfg_path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-27_10-33-21_multihead_model_tower\resolved_config.yaml
+  # hidden_dims: [256, 128] 
   
-  # Feature input dimensions
-  features:
-    cats:
-      cardinalities: [22, 862, 5]   # S_NAME, CATEGORY, SUBCATEGORY_clean
-      emb_dim: 16
-    times:
-      input_dim: 7                  # OPEN_TIME_ hour/day features
-      mlp_dims: [32, 16]
-    text:
-      input_dim: 1024               # embedding dimension from SentenceTransformer
-      mlp_dims: [256, 128]
+  # # Feature input dimensions
+  # features:
+  #   cats:
+  #     cardinalities: [22, 862, 5]   # S_NAME, CATEGORY, SUBCATEGORY_clean
+  #     emb_dim: 16
+  #   times:
+  #     input_dim: 7                  # OPEN_TIME_ hour/day features
+  #     mlp_dims: [32, 16]
+  #   text:
+  #     input_dim: 1024               # embedding dimension from SentenceTransformer
+  #     mlp_dims: [256, 128]
 
-  # Output heads
-  heads:
-    subcategory:
-      type: classification
-      out_dim: 15
-      tower_dims: [128]
-      loss_weight: 10
-    priority:
-      type: binary
-      out_dim: 1
-    avariya:
-      type: binary
-      out_dim: 1
+  # # Output heads
+  # heads:
+  #   subcategory:
+  #     type: classification
+  #     tower_dims: [128]
+  #     out_dim: 14
+  #   priority:
+  #     type: binary
+  #     out_dim: 1
+  #   avariya:
+  #     type: binary
+  #     out_dim: 1
 
-# Preprocessing / cleaning
+# Preprocessing / feature engeneering
 preprocessing:
-  text_col: QUESTION_clean
+  text_cols: [QUESTION]
+  emb_text_col: QUESTION_clean
+
   categorical: [S_NAME, REG, SOURCE]
   time: [OPEN_TIME_]
-  embedding_model_path: "sentence_transformers/bge-multi-3"
+  embedding_model_path: "./models/embeddings/deepvk_USER-bge-m3"
+  
   cat_encoders:
-    S_NAME: "../models/vectorizers/S_NAME_oenc.pkl"
-    REG: "../models/vectorizers/REG_oenc.pkl"
-    SOURCE: "../models/vectorizers/SOURCE_oenc.pkl"
+    S_NAME: "./models/vectorizers/S_NAME_oenc.pkl"
+    REG: "./models/vectorizers/REG_oenc.pkl"
+    SOURCE: "./models/vectorizers/SOURCE_oenc.pkl"
 
-  sensitive_patterns:
+  SENSITIVE_PATTERNS:
     EMAIL: "\\b[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\\.)+[A-Za-z]{2,}\\b"
     PHONE: "\\b(?:\\+7|8)?[\\s-]?\\(?\\d{3,4}\\)?[\\s-]?\\d{2,3}[\\s-]?\\d{2}[\\s-]?\\d{2}\\b"
     INN: "(?i)инн\\s*\\d{5,12}"
@@ -58,8 +62,23 @@ preprocessing:
     URL: "https?://[^\\s]+"
 
   TEXT_PLACEHOLDER: "[NO_TEXT]"
-  EMPTY_QUESTION_MARKERS: ["nan","Nan","None","Null","пусто","отсутствует текст описание пустое","fwd: описание пустое","пустое описание","отсутствует текст","отсутствует","нету","нет"]
-  SERVICE_MARKERS:
+
+  EMPTY_QUESTION_PATTERNS:
+    - "\\bnan\\b"
+    - "\\bNan\\b"
+    - "\\bNone\\b"
+    - "\\bNull\\b"
+    - "\\bпусто\\b"
+    - "отсутствует текст описание пустое"
+    - "fwd:\\s*описание пустое"
+    - "пустое описание"
+    - "описание пустое"
+    - "отсутствует текст"
+    - "\\bотсутствует\\b"
+    - "\\bнету\\b"
+    - "\\bнет\\b"
+
+  SERVICE_KILL_MARKERS:
     - "The mail"
     - "Уведомляющий Сервер"
     - "Postfix Queue ID"
@@ -73,10 +92,32 @@ preprocessing:
     - "Message ID:"
     - "Mail server"
     - "Receive Notification Mail"
+    - "Pronto! HTML5 Feedback Pronto! HTML5 client version"
 
+  SERVICE_LEFT_MARKERS:
+    - "pronto! html5 feedback"
+    - "Fwd:"
+    - "Fwd: Re:"
+    - "Fwd: Fwd:"
+
+postprocessing:
+  heads:
+    subcategory:
+      type: classification
+      mapping_path: "C:/Users/mew/Projects/autotickets-rag-bot/models/vectorizers/SUBCATEGORY_clean_lenc.pkl"
+    priority:
+      type: binary
+      mapping: {0: "2", 1: "3"}  # optional
+      threshold: 0.5
+    avariya:
+      type: binary
+      mapping: {0: "Нет", 1: "Да"}   # optional
+      threshold: 0.5
+
+  
 # ------------------------
 # Optional: inference / deployment settings
 # ------------------------
 inference:
-  device: "cpu"     # or "cuda"
+  # device: "cpu"     # or "cuda"
   batch_size: 1

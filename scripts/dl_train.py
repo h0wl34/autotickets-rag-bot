@@ -11,7 +11,7 @@ from src.data.ticket_dataset import TicketDataset
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, default=None, help="Путь к файлу конфигурации")
-    p.add_argument("--checkpoint", type=str, default=None, help="Путь к директории с чекпоинтом")
+    p.add_argument("--checkpoint", type=str, default=None, help="Путь к чекпоинту")
     p.add_argument("--full_dataset", action="store_true", help="Использовать полный датасет (train + val)")
     return p.parse_args()
 
@@ -37,11 +37,7 @@ def main():
     logger.info(f"Train dataset size: {len(train_dataset)}")
     logger.info(f"Validation dataset size: {len(val_dataset)}")
 
-    model = MultiHeadModel(
-        feature_config=cfg["features"],
-        heads_config=heads_config,
-        hidden_dims=cfg["model"]["hidden_dims"]
-    )
+    model = MultiHeadModel(cfg)
     
     checkpoint = None
     if args.checkpoint is not None:

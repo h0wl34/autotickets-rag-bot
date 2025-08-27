@@ -2,34 +2,33 @@ import torch
 import torch.nn as nn
 
 class MultiHeadModel(nn.Module):
-    def __init__(
-        self,
-        feature_config: dict,
-        heads_config: dict,
-        hidden_dims: list = [256, 128]
-    ):
+    def __init__(self, cfg: dict):
         super().__init__()
+        
+        self.feature_config = cfg["features"]
+        self.heads_config = cfg["model"]["heads"]
+        self.hidden_dims = cfg["model"]["hidden_dims"]
 
         # --- oe-encoded cat features ---
         self.cat_embeddings = nn.ModuleList()
         cat_out_dim = 0
-        if "oe_cats" in feature_config:
-            for card in feature_config["oe_cats"]["cardinalities"]:
-                emb_dim = feature_config["oe_cats"].get("emb_dim", 16)
+        if "oe_cats" in self.feature_config:
+            for card in self.feature_config["oe_cats"]["cardinalities"]:
+                emb_dim = self.feature_config["oe_cats"].get("emb_dim", 16)
                 self.cat_embeddings.append(nn.Embedding(card + 1, emb_dim)) # reserved N+1 emb for new classes
                 cat_out_dim += emb_dim
                 
         # --- binary cat features ---
-        self.bin_cat_dim = feature_config.get("bin_cats", {}).get("input_dim", 0)
+        self.bin_cat_dim = self.feature_config.get("bin_cats", {}).get("input_dim", 0)
         cat_out_dim += self.bin_cat_dim
         
         # --- time features ---
         self.time_mlp = None
         time_out_dim = 0
-        if "times" in feature_config:
-            dims = feature_config["times"].get("mlp_dims", [32,16])
+        if "times" in self.feature_config:
+            dims = self.feature_config["times"].get("mlp_dims", [32,16])
             layers = []
-            in_dim = feature_config["times"]["input_dim"]
+            in_dim = self.feature_config["times"]["input_dim"]
             for h in dims:
                 layers.append(nn.Linear(in_dim, h))
                 layers.append(nn.ReLU())
@@ -41,10 +40,10 @@ class MultiHeadModel(nn.Module):
         # --- text features ---
         self.text_mlp = None
         text_out_dim = 0
-        if "text" in feature_config:
-            dims = feature_config["text"].get("mlp_dims", [256, 128])
+        if "text" in self.feature_config:
+            dims = self.feature_config["text"].get("mlp_dims", [256, 128])
             layers = []
-            in_dim = feature_config["text"]["input_dim"]
+            in_dim = self.feature_config["text"]["input_dim"]
             for h in dims:
                 layers.append(nn.Linear(in_dim, h))
                 layers.append(nn.ReLU())
@@ -56,7 +55,7 @@ class MultiHeadModel(nn.Module):
         # --- fusion MLP encoder ---
         fusion_input_dim = cat_out_dim + time_out_dim + text_out_dim
         layers = []
-        for h in hidden_dims:
+        for h in self.hidden_dims:
             layers.append(nn.Linear(fusion_input_dim, h))
             layers.append(nn.ReLU())
             fusion_input_dim = h
@@ -64,7 +63,7 @@ class MultiHeadModel(nn.Module):
 
         # --- multi-head outputs ---
         self.heads = nn.ModuleDict()
-        for name, cfg in heads_config.items():
+        for name, cfg in self.heads_config.items():
             tower_dims = cfg.get("tower_dims")  # optional
             if tower_dims:
                 layers = []
@@ -72,7 +71,8 @@ class MultiHeadModel(nn.Module):
                 for h in tower_dims:
                     layers.append(nn.Linear(in_dim, h))
                     layers.append(nn.ReLU())
-                    layers.append(nn.Dropout(0.15))
+                    if 'dropoout' in cfg:
+                        layers.append(nn.Dropout(cfg['dropout']))
                     in_dim = h
                 layers.append(nn.Linear(in_dim, cfg["out_dim"]))
                 self.heads[name] = nn.Sequential(*layers)
@@ -82,9 +82,7 @@ class MultiHeadModel(nn.Module):
                         nn.init.kaiming_uniform_(m.weight, nonlinearity='relu')
             else:
                 self.heads[name] = nn.Linear(fusion_input_dim, cfg["out_dim"])
-
-        self.heads_config = heads_config
-            
+                            
 
     def forward(self, x: dict):
         fused_parts = []
@@ -126,4 +124,3 @@ class MultiHeadModel(nn.Module):
         for name, head in self.heads.items():
             outputs[name] = torch.squeeze(head(fused), dim=-1)
         return outputs
-
