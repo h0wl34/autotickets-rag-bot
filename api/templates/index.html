@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Автозаполнение заявки</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+    <div class="container mt-5">
+        <h1 class="mb-4">Автозаполнение заявки</h1>
+
+        <div class="row">
+            <!-- Form column -->
+            <div class="col-md-6">
+                <form id="ticket-form" class="card p-4 bg-white shadow-sm">
+                    <div class="mb-3">
+                        <label for="region" class="form-label">Регион</label>
+                        </select name="region" id="region" class="form-select" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="source" class="form-label">Источник</label>
+                        </select name="source" id="source" class="form-select" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="service" class="form-label">Сервис</label>
+                        </select name="service" id="service" class="form-select" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="question" class="form-label">Вопрос</label>
+                        <input type="text" name="question" id="question" class="form-control"
+                            placeholder="Введите вопрос" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+
+            <!-- Predictions column -->
+            <div class="col-md-6">
+                <div id="predictions" class="card p-4 bg-white shadow-sm">
+                    <h4>Predictions</h4>
+                    <ul id="pred-list">
+                        <li>Subcategory: <span id="subcategory">-</span></li>
+                        <li>Priority: <span id="priority">-</span></li>
+                        <li>Avariya: <span id="avariya">-</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            // --- Populate selects from /meta ---
+            const res = await fetch("/meta");
+            const data = await res.json();
+
+            for (const [col, values] of Object.entries(data)) {
+                const select = document.getElementById(col);
+                if (!select) continue;  // safety
+                select.innerHTML = ""; // clear
+                values.forEach(v => {
+                    const option = document.createElement("option");
+                    option.value = v;
+                    option.textContent = v;
+                    select.appendChild(option);
+                });
+            }
+
+            // --- Add form listener ---
+            const form = document.getElementById('ticket-form');
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+
+                    const payload = {
+                        region: document.getElementById('region').value,
+                        source: document.getElementById('source').value,
+                        service: document.getElementById('service').value,
+                        question: document.getElementById('question').value
+                    };
+
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    // Update UI
+                    document.getElementById('subcategory').textContent = data.subcategory || '-';
+                    document.getElementById('priority').textContent = data.priority || '-';
+                    document.getElementById('avariya').textContent = data.avariya || '-';
+                });
+            }
+        });
+    </script>
+
+</body>
+
+</html>

@@ -52,4 +52,20 @@ class Postprocessor:
             raise ValueError(f"Unknown head type: {head_type}")
 
     def process(self, outputs: Dict[str, np.ndarray]) -> Dict[str, Any]:
-        return {h: self.process_head(h, out) for h, out in outputs.items()}
+        batch_size = None
+        # Determine batch size from any head
+        for out in outputs.values():
+            batch_size = out.shape[0] if out.ndim > 0 else 1
+            break
+    
+        processed_heads =  {h: self.process_head(h, out) for h, out in outputs.items()}
+        
+        if batch_size == 1:
+            return {h: v[0] if isinstance(v, (list, np.ndarray)) else v
+                    for h, v in processed_heads.items()}
+        else:
+            # For batch: return list of dicts
+            return [
+                {h: v[i] for h, v in processed_heads.items()} 
+                for i in range(batch_size)
+            ]

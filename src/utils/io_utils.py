@@ -9,14 +9,14 @@ import logging
 
 
 def load_yaml(path):
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 def save_yaml(data, path):
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f)
-        
+
         
 def save_json(obj: dict[str, Any] | list, path: Path) -> None:
     ensure_dir(path.parent)

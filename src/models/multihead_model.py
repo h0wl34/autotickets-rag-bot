@@ -7,7 +7,7 @@ class MultiHeadModel(nn.Module):
         
         self.feature_config = cfg["features"]
         self.heads_config = cfg["model"]["heads"]
-        self.hidden_dims = cfg["model"]["hidden_dims"]
+        self.fusion_cfg = cfg["model"]["fusion"]
 
         # --- oe-encoded cat features ---
         self.cat_embeddings = nn.ModuleList()
@@ -42,22 +42,36 @@ class MultiHeadModel(nn.Module):
         text_out_dim = 0
         if "text" in self.feature_config:
             dims = self.feature_config["text"].get("mlp_dims", [256, 128])
+            dropout_p = self.feature_config["text"].get("dropout", 0.1)
             layers = []
             in_dim = self.feature_config["text"]["input_dim"]
-            for h in dims:
-                layers.append(nn.Linear(in_dim, h))
-                layers.append(nn.ReLU())
-                in_dim = h
             
+            for i, h in enumerate(dims):
+                linear = nn.Linear(in_dim, h)
+                nn.init.kaiming_uniform_(linear.weight, nonlinearity='relu')
+                layers.append(linear)
+                layers.append(nn.ReLU())
+                # Only apply dropout after intermediate layers, not the last
+                if i < len(dims) - 1:
+                    layers.append(nn.Dropout(dropout_p))
+                in_dim = h
+
             self.text_mlp = nn.Sequential(*layers)
             text_out_dim = dims[-1]
-            
+
         # --- fusion MLP encoder ---
         fusion_input_dim = cat_out_dim + time_out_dim + text_out_dim
         layers = []
-        for h in self.hidden_dims:
-            layers.append(nn.Linear(fusion_input_dim, h))
+        dropout_p = self.fusion_cfg.get('dropout', 0.1)
+
+        for i, h in enumerate(self.fusion_cfg["hidden_dims"]):
+            linear = nn.Linear(fusion_input_dim, h)
+            nn.init.kaiming_uniform_(linear.weight, nonlinearity='relu')
+            layers.append(linear)
             layers.append(nn.ReLU())
+            # Only dropout on intermediate layers, not after last
+            if i < len(self.fusion_cfg["hidden_dims"]) - 1:
+                layers.append(nn.Dropout(dropout_p))
             fusion_input_dim = h
         self.fusion_mlp = nn.Sequential(*layers)
 

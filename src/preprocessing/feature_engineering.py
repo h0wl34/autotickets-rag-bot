@@ -1,4 +1,3 @@
-# src/preprocessing/feature_engineering.py
 import numpy as np
 import pandas as pd
 import joblib
@@ -12,7 +11,7 @@ class FeatureEngineer:
         self.cat_encoders: dict[str, OrdinalEncoder] = {col: joblib.load(path) for col, path in cfg["cat_encoders"].items()}
         self.text_embedder = SentenceTransformer(cfg['embedding_model_path'])
 
-    def encode_cats(self, df: pd.DataFrame, cat_cols: list[str]) -> np.ndarray:
+    def _encode_cats(self, df: pd.DataFrame, cat_cols: list[str]) -> np.ndarray:
         cat_arrays = []
         for col in cat_cols:
             if col not in df.columns:
@@ -26,14 +25,8 @@ class FeatureEngineer:
                 cat_arrays.append(arr.astype(np.float32))
         
         return np.concatenate(cat_arrays, axis=1)
-    
-    # def encode_avariya(series):
-    #     return series.map({'Да':1, 'Нет':0}).fillna(0).astype(int)
-    
-    # def encode_priority(series):
-    #     return series.fillna(2).astype(int)  
 
-    def extract_time_features(self, df: pd.DataFrame, time_cols: list[str]) -> np.ndarray:
+    def _extract_time_features(self, df: pd.DataFrame, time_cols: list[str]) -> np.ndarray:
         time_feats = []
         for col in time_cols:
             datetime_col = pd.to_datetime(df[col], errors='coerce')
@@ -53,12 +46,12 @@ class FeatureEngineer:
             
         return np.concatenate(time_feats, axis=1)
 
-    def encode_texts(self, df: pd.DataFrame, text_col: str) -> np.ndarray:
+    def _encode_texts(self, df: pd.DataFrame, text_col: str) -> np.ndarray:
         texts = df[text_col].tolist()
         embeddings = self.text_embedder.encode(texts, convert_to_tensor=False, convert_to_numpy=True)  
         return embeddings.astype(np.float32)
     
-    def resolve_sensitive_flags(self, df: pd.DataFrame, text_col: str) -> np.ndarray:
+    def _resolve_sensitive_flags(self, df: pd.DataFrame, text_col: str) -> np.ndarray:
         def _flags(text):
             flags = {f"HAS_{k}": 0 for k in self.cfg["SENSITIVE_PATTERNS"].keys()}
             if not isinstance(text, str) or text in ["", "[NO_TEXT]"]:
@@ -73,10 +66,10 @@ class FeatureEngineer:
         return np.stack(df[text_col].apply(_flags).values).astype(np.float32)
 
     def transform(self, df: pd.DataFrame) -> dict:
-        oe_cats = self.encode_cats(df, self.cfg['categorical'])
-        bin_cats = self.resolve_sensitive_flags(df, self.cfg['emb_text_col'])    
-        times = self.extract_time_features(df, self.cfg['time'])
-        text_emb = self.encode_texts(df, self.cfg['emb_text_col'])
+        oe_cats = self._encode_cats(df, self.cfg['categorical'])
+        bin_cats = self._resolve_sensitive_flags(df, self.cfg['emb_text_col'])    
+        times = self._extract_time_features(df, self.cfg['time'])
+        text_emb = self._encode_texts(df, self.cfg['emb_text_col'])
         
         return {
             "oe_cats": torch.from_numpy(oe_cats).long(),
@@ -84,3 +77,10 @@ class FeatureEngineer:
             "times": torch.from_numpy(times).float(),
             "text": torch.from_numpy(text_emb).float()
         }
+        
+    def get_valid_classes(self) -> dict[str, list]:
+        """
+        Returns dictionary {feature_name: list_of_known_categories}
+        Can be used to populate the UI dropdowns
+        """
+        return {col: enc.categories_[0].tolist() for col, enc in self.cat_encoders.items()}

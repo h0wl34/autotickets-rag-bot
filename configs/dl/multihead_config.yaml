@@ -1,67 +1,52 @@
-model:
-  name: multihead_model_tower
-  hidden_dims: [256, 128]
-  # dropout: 0.2
-  heads: # targets resolved from heads
-      subcategory:
-        type: classification
-        tower_dims: [128]
-        dropout: 0.1
-        out_dim: 14        # number of subcategory classes
-        class_weights: [
-          4.478561908992829,
-          0.19927264286646143,
-          0.47579515282765206,
-          54.493204633204634,
-          14.09964035964036,
-          11.429980563654032,
-          7.123546394250182,
-          3.3532606629666235,
-          9.020439206462829,
-          245.88397212543555,
-          27.74144979951254,
-          13.349103359564165,
-          0.1729794587704677,
-          29.035837722185647
-        ]
-        loss_weight: 8
-      priority:
-        type: binary
-        out_dim: 1      # number of priority classes
-        # class_weights: [
-        #   4.630431359168515,
-        #   0.5605263659557163
-        # ]
-      avariya:
-        type: binary
-        out_dim: 1
-        # class_weights: [
-        #   0.5080437543375655,
-        #   31.580014320236284
-        # ]
+  model:
+    name: multihead_model_tower
 
-features:
-  oe_cats:
-    path: oe_cat_features.npz
-    cardinalities: [23, 881, 6] # S_NAME, REG, SOURCE
-    emb_dim: 16
-  bin_cats:
-    path: bin_cat_features.npz
-    input_dim: 17 # 16 sensitive + HAS_TEXT
-  times:
-    path: time_features.npz
-    mlp_dims: [32, 16]
-    input_dim: 7
-  text:
-    path: question_bge_m3.npz
-    mlp_dims: [256, 128]
-    input_dim: 1024
+    fusion:
+      hidden_dims: [1024, 512, 256]
+      dropout: 0.1
+      
+    heads: # targets resolved from heads
+        subcategory:
+          type: classification
+          tower_dims: [128]
+          dropout: 0.1
+          out_dim: 14        # number of subcategory classes
+          class_weights: [1.06415277e-02, 4.73492474e-04, 1.13053865e-03, 1.29481508e-01,
+            3.35022083e-02, 2.71588197e-02, 1.69262853e-02, 7.96769523e-03,
+            2.14334994e-02, 5.84245828e-01, 6.59165629e-02, 3.17188545e-02,
+            4.11017140e-04, 6.89921629e-02]
+          loss_weight: 3
+        priority:
+          type: binary
+          out_dim: 1      # number of priority classes
+          class_weights: [0.8920187, 0.1079813]
+        avariya:
+          type: binary
+          out_dim: 1
+          class_weights: [0.0158328, 0.9841672]
 
-training:
-  batch_size: 32
-  epochs: 20
-  lr: 0.0005
-  num_workers: 10
+  features:
+    oe_cats:
+      path: oe_cat_features.npz
+      cardinalities: [23, 881, 6] # S_NAME, REG, SOURCE
+      emb_dim: 16
+    bin_cats:
+      path: bin_cat_features.npz
+      input_dim: 17 # 16 sensitive + HAS_TEXT
+    times:
+      path: time_features.npz
+      mlp_dims: [32, 16]
+      input_dim: 7
+    text:
+      path: question_bge_m3.npz
+      mlp_dims: [512, 256]
+      input_dim: 1024
 
-# logging:
-#   level: INFO
+  training:
+    batch_size: 32
+    epochs: 30
+    lr: 0.0005
+    num_workers: 10
+
+  # logging:
+  #   level: INFO

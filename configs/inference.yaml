@@ -1,33 +1,7 @@
 model:
   name: multihead_model_tower
-  path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-27_10-33-21_multihead_model_tower\intermediate_checkpoint.pt
-  cfg_path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-27_10-33-21_multihead_model_tower\resolved_config.yaml
-  # hidden_dims: [256, 128] 
-  
-  # # Feature input dimensions
-  # features:
-  #   cats:
-  #     cardinalities: [22, 862, 5]   # S_NAME, CATEGORY, SUBCATEGORY_clean
-  #     emb_dim: 16
-  #   times:
-  #     input_dim: 7                  # OPEN_TIME_ hour/day features
-  #     mlp_dims: [32, 16]
-  #   text:
-  #     input_dim: 1024               # embedding dimension from SentenceTransformer
-  #     mlp_dims: [256, 128]
-
-  # # Output heads
-  # heads:
-  #   subcategory:
-  #     type: classification
-  #     tower_dims: [128]
-  #     out_dim: 14
-  #   priority:
-  #     type: binary
-  #     out_dim: 1
-  #   avariya:
-  #     type: binary
-  #     out_dim: 1
+  path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-27_14-38-14_multihead_model_tower\intermediate_checkpoint.pt
+  cfg_path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-27_14-38-14_multihead_model_tower\resolved_config.yaml
 
 # Preprocessing / feature engeneering
 preprocessing:
@@ -113,6 +87,12 @@ postprocessing:
       type: binary
       mapping: {0: "Нет", 1: "Да"}   # optional
       threshold: 0.5
+
+UI_TO_DS_COL: 
+  region: "REG"
+  source: "SOURCE"
+  service: "S_NAME"
+  question: "QUESTION"
 
   
 # ------------------------

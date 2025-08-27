@@ -19,4 +19,3 @@ class InferencePipeline:
         final_preds = self.postproc.process(raw_preds)
         
         return final_preds
-    

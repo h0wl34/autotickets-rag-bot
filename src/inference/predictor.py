@@ -26,7 +26,7 @@ class Predictor:
         features = {k: v.to(self.device) for k, v in feats_dict.items()}
         
         with torch.no_grad():
-            outputs = self.model(feats_dict)
+            outputs = self.model(features)
         return {k: v.cpu().numpy() for k, v in outputs.items()}
     
     def _find_best_device(self):

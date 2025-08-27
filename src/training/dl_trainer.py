@@ -209,7 +209,9 @@ class DLTrainer:
                     
                 loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
                 # pred shape [batch,1], target shape [batch]
-                loss = loss_fn(pred.squeeze(-1), target.float())
+                pred = pred.view(-1)
+                target = target.view(-1).float()
+                loss = loss_fn(pred, target)
 
             elif head_cfg["type"] == "classification":
                 # Check if class_weights exist in schema
