@@ -31,6 +31,7 @@ class MultiHeadModel(nn.Module):
             in_dim = self.feature_config["times"]["input_dim"]
             for h in dims:
                 layers.append(nn.Linear(in_dim, h))
+                layers.append(nn.BatchNorm1d(h))
                 layers.append(nn.ReLU())
                 in_dim = h
             
@@ -50,6 +51,7 @@ class MultiHeadModel(nn.Module):
                 linear = nn.Linear(in_dim, h)
                 nn.init.kaiming_uniform_(linear.weight, nonlinearity='relu')
                 layers.append(linear)
+                layers.append(nn.BatchNorm1d(h))
                 layers.append(nn.ReLU())
                 # Only apply dropout after intermediate layers, not the last
                 if i < len(dims) - 1:
@@ -68,6 +70,7 @@ class MultiHeadModel(nn.Module):
             linear = nn.Linear(fusion_input_dim, h)
             nn.init.kaiming_uniform_(linear.weight, nonlinearity='relu')
             layers.append(linear)
+            layers.append(nn.BatchNorm1d(h))
             layers.append(nn.ReLU())
             # Only dropout on intermediate layers, not after last
             if i < len(self.fusion_cfg["hidden_dims"]) - 1:
@@ -84,6 +87,7 @@ class MultiHeadModel(nn.Module):
                 in_dim = fusion_input_dim
                 for h in tower_dims:
                     layers.append(nn.Linear(in_dim, h))
+                    layers.append(nn.BatchNorm1d(h))
                     layers.append(nn.ReLU())
                     if 'dropout' in cfg:
                         layers.append(nn.Dropout(cfg['dropout']))

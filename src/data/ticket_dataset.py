@@ -24,6 +24,11 @@ class TicketDataset(Dataset):
             split_name: "train", "val", "test"
         """
         self.idx = load_split(split_name)
+        # if len(self.idx) > 10000:
+        #     self.idx = torch.tensor(self.idx)
+        #     perm = torch.randperm(len(self.idx))[:10000]
+        #     self.idx = self.idx[perm].tolist()
+            
         self.features = {}
         
         for feat_name, file_path in feature_files.items():

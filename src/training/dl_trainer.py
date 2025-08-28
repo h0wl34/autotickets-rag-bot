@@ -10,7 +10,7 @@ from transformers import get_cosine_schedule_with_warmup
 from src.utils.io_utils import get_logger, ensure_dir, save_json, save_yaml
 from sklearn.metrics import classification_report
 from src.models.multihead_model import MultiHeadModel
-
+from src.training.losses import focal_loss
 
 class DLTrainer:
     def __init__(self, model, train_dataset, cfg, out_dir, checkpoint: dict = None, val_dataset=None):
@@ -192,7 +192,7 @@ class DLTrainer:
 
         if best_val != -np.inf:
             self.logger.info(f"Best val f1: {best_val:.4f}")        
-    
+        
     def _compute_loss(self, outputs, targets):
         total_loss = 0.0
 
@@ -202,27 +202,32 @@ class DLTrainer:
             loss_weight = head_cfg.get("loss_weight", 1)
 
             if head_cfg["type"] == "binary":
-                pos_weight = None
-                if "class_weights" in head_cfg and head_cfg["class_weights"] is not None:
-                    w0, w1 = head_cfg["class_weights"]  # веса из compute_class_weight
-                    pos_weight = torch.tensor([w1 / w0], dtype=torch.float32, device=self.device)
-                    
+                # Compute pos_weight safely
+                if "pos_weight" in head_cfg and head_cfg["pos_weight"] is not None:
+                    pos_weight = head_cfg["pos_weight"]
+
+                    # Avoid extremely large pos_weight
+                    pos_weight = min(pos_weight, 30.0)  # cap at 30
+                    pos_weight = torch.tensor([pos_weight], dtype=torch.float32, device=self.device)
+                else:
+                    pos_weight = None
+
                 loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-                # pred shape [batch,1], target shape [batch]
                 pred = pred.view(-1)
                 target = target.view(-1).float()
                 loss = loss_fn(pred, target)
+                # loss = focal_loss(pred, target, alpha=0.25, gamma=2)
 
             elif head_cfg["type"] == "classification":
-                # Check if class_weights exist in schema
+                weights = None
                 if "class_weights" in head_cfg and head_cfg["class_weights"] is not None:
                     weights = torch.tensor(head_cfg["class_weights"], dtype=torch.float32).to(self.device)
-                    loss_fn = nn.CrossEntropyLoss(weight=weights)
-                else:
-                    loss_fn = nn.CrossEntropyLoss()
-                
-                # CrossEntropy expects logits [batch, num_classes], targets [batch]
-                loss = loss_fn(pred, target.long())
+                #     loss_fn = nn.CrossEntropyLoss(weight=weights)
+                # else:
+                #     loss_fn = nn.CrossEntropyLoss()
+
+                # loss = loss_fn(pred, target.long())
+                loss = focal_loss(pred, target.long(), alpha=weights, gamma=2)
 
             else:
                 raise ValueError(f"Unsupported head type: {head_cfg['type']}")

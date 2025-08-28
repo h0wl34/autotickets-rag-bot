@@ -26,12 +26,12 @@ def main():
     train_dataset = TicketDataset(
         feature_files=feature_files,
         heads_config=heads_config,
-        split_name="train"
+        split_name="train_small"
     )
     val_dataset = TicketDataset(
         feature_files=feature_files,
         heads_config=heads_config,
-        split_name="test"
+        split_name="val_small"
     )
 
     logger.info(f"Train dataset size: {len(train_dataset)}")
