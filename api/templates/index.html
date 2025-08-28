@@ -17,17 +17,23 @@
                 <form id="ticket-form" class="card p-4 bg-white shadow-sm">
                     <div class="mb-3">
                         <label for="region" class="form-label">Регион</label>
-                        </select name="region" id="region" class="form-select" required>
+                        <select name="region" id="region" class="form-select" required>
+                            <option></option>
+                        </select>
                     </div>
 
                     <div class="mb-3">
                         <label for="source" class="form-label">Источник</label>
-                        </select name="source" id="source" class="form-select" required>
+                        <select name="source" id="source" class="form-select" required>
+                            <option></option>
+                        </select>
                     </div>
 
                     <div class="mb-3">
                         <label for="service" class="form-label">Сервис</label>
-                        </select name="service" id="service" class="form-select" required>
+                        <select name="service" id="service" class="form-select" required>
+                            <option></option>
+                        </select>
                     </div>
 
                     <div class="mb-3">
@@ -36,18 +42,18 @@
                             placeholder="Введите вопрос" required>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="submit" class="btn btn-primary">Предсказать</button>
                 </form>
             </div>
 
             <!-- Predictions column -->
             <div class="col-md-6">
                 <div id="predictions" class="card p-4 bg-white shadow-sm">
-                    <h4>Predictions</h4>
+                    <h4>Предсказания</h4>
                     <ul id="pred-list">
-                        <li>Subcategory: <span id="subcategory">-</span></li>
-                        <li>Priority: <span id="priority">-</span></li>
-                        <li>Avariya: <span id="avariya">-</span></li>
+                        <li>Категория вопроса: <span id="subcategory">-</span></li>
+                        <li>Приоритет: <span id="priority">-</span></li>
+                        <li>Авария: <span id="avariya">-</span></li>
                     </ul>
                 </div>
             </div>

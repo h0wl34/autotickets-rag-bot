@@ -3,35 +3,34 @@ model:
 
   fusion:
     hidden_dims: [1024, 512, 256]
-    dropout: 0.1
+    dropout: 0.2
 
   heads: # targets resolved from heads
     subcategory:
       type: classification
-      tower_dims: [256, 128]
-      dropout: 0.1
+      tower_dims: [256, 128, 64]
+      dropout: 0.15
       out_dim: 14        # number of subcategory classes
       class_weights: [
-          4.478561908992829,
-          0.19927264286646143,
-          0.47579515282765206,
-          54.493204633204634,
-          14.09964035964036,
-          11.429980563654032,
-          7.123546394250182,
-          3.3532606629666235,
-          9.020439206462829,
-          245.88397212543555,
-          27.74144979951254,
-          13.349103359564165,
-          0.1729794587704677,
-          29.035837722185647
-        ]
+        0.6730341911315918,
+        0.5076991319656372,
+        0.5183828473091125,
+        2.605405569076538,
+        1.044755220413208,
+        0.9416099786758423,
+        0.7752261161804199,
+        0.6295569539070129,
+        0.8485146760940552,
+        10.0,
+        1.571821689605713,
+        1.0157573223114014,
+        0.5066832304000854,
+        1.6218317747116089]
       loss_weight: 5
     priority:
       type: binary
       out_dim: 1      # number of priority classes
-      pos_weight: 0.1210527319114325
+      pos_weight: 1
     avariya:
       type: binary
       out_dim: 1
@@ -51,7 +50,7 @@ features:
     input_dim: 7
   text:
     path: question_bge_m3.npz
-    mlp_dims: [512, 256]
+    # mlp_dims: [512, 256]
     input_dim: 1024
 
 training:
@@ -60,5 +59,8 @@ training:
   lr: 0.0005
   num_workers: 10
 
-# logging:
-#   level: INFO
+  feature_dropout:
+    oe_cats: 0.5 
+    bin_cats: 0.2
+    times: 0.2
+    # text: 0.0      # never drop text embeddings

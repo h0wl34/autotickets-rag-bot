@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from datetime import datetime
 from tqdm import tqdm
+import pprint
 from transformers import get_cosine_schedule_with_warmup
 
 from src.utils.io_utils import get_logger, ensure_dir, save_json, save_yaml
@@ -23,7 +24,7 @@ class DLTrainer:
         self.run_dir = Path(out_dir) / run_name
         ensure_dir(self.run_dir)
         
-        self.logger = get_logger("DLTrainer", self.run_dir, tee_stdout=False)
+        self.logger = get_logger("DLTrainer", self.run_dir, tee_stdout=True)
         save_yaml(self.cfg, self.run_dir / "resolved_config.yaml")
 
         self.device = self._find_best_device()
@@ -42,8 +43,7 @@ class DLTrainer:
                 self.model.load_state_dict(checkpoint["model_state"])
                 self.logger.info("Loaded model state")
                 
-            optimizer_state = checkpoint.get("optimizer_state")
-            if optimizer_state is None:
+            if "optimizer_state" not in checkpoint:
                 self.logger.info("No optimizer state found, skipping")
             else:    
                 self.optimizer.load_state_dict(checkpoint["optimizer_state"])
@@ -53,6 +53,12 @@ class DLTrainer:
                         if torch.is_tensor(v):
                             state[k] = v.to(self.device)
                 self.logger.info("Loaded optimizer state")
+                
+            if "scheduler_state" in checkpoint:
+                self.scheduler.load_state_dict(checkpoint["scheduler_state"])
+                self.logger.info("Loaded scheduler state")
+            else:
+                self.logger.info("No scheduler state found, skipping")
 
         self.train_loader = DataLoader(
             train_dataset,
@@ -87,8 +93,10 @@ class DLTrainer:
             loss = self._compute_loss(outputs, targets)
 
             loss.backward()
+            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
             self.optimizer.step()
             self.scheduler.step()
+            
             total_loss += loss.item()
         return total_loss / len(self.train_loader)
 
@@ -140,7 +148,9 @@ class DLTrainer:
                     if cfg.get("type") in ["classification", "binary"]]
 
         self.logger.info(f"Starting training, {self.epochs} epochs")
-        
+        self.logger.info(f"Features configuration:\n{pprint.pformat(self.cfg['features'], indent=2)}")
+        self.logger.info(f"Feature dropout:\n{pprint.pformat(self.cfg['training']['feature_dropout'], indent=2)}")
+
         for epoch in tqdm(range(1, self.epochs + 1), desc="Epochs", leave=True):
             self.logger.info(f"Starting epoch {epoch}")
             train_loss = self.train_epoch()
@@ -167,6 +177,7 @@ class DLTrainer:
                 checkpoint = {
                     "model_state": self.model.state_dict(),
                     "optimizer_state": self.optimizer.state_dict(),
+                    "scheduler_state": self.scheduler.state_dict(),
                     "epoch": epoch,
                     "metrics": metrics
                 }
@@ -177,6 +188,7 @@ class DLTrainer:
                 checkpoint = {
                     "model_state": self.model.state_dict(),
                     "optimizer_state": self.optimizer.state_dict(),
+                    "scheduler_state": self.scheduler.state_dict(),
                     "epoch": epoch
                 }
                 checkpoint_path = self.run_dir/'intermediate_checkpoint.pt'
@@ -207,7 +219,7 @@ class DLTrainer:
                     pos_weight = head_cfg["pos_weight"]
 
                     # Avoid extremely large pos_weight
-                    pos_weight = min(pos_weight, 30.0)  # cap at 30
+                    pos_weight = min(pos_weight, 5.0)  # cap at 5
                     pos_weight = torch.tensor([pos_weight], dtype=torch.float32, device=self.device)
                 else:
                     pos_weight = None

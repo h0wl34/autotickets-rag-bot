@@ -8,6 +8,7 @@ class MultiHeadModel(nn.Module):
         self.feature_config = cfg["features"]
         self.heads_config = cfg["model"]["heads"]
         self.fusion_cfg = cfg["model"]["fusion"]
+        self.feature_dropout = cfg['training'].get('feature_dropout', {})
 
         # --- oe-encoded cat features ---
         self.cat_embeddings = nn.ModuleList()
@@ -106,13 +107,22 @@ class MultiHeadModel(nn.Module):
         fused_parts = []
 
         # --- oe + bin cats ---
-        if len(self.cat_embeddings) > 0:
+        if len(self.cat_embeddings) > 0 and "oe_cats" in x:
             cat_feats_oe = torch.cat([emb(x["oe_cats"][:, i]) 
                                     for i, emb in enumerate(self.cat_embeddings)], dim=-1)
+            if self.training and self.feature_dropout.get("oe_cats", 0) > 0:
+                if torch.rand(1).item() < self.feature_dropout["oe_cats"]:
+                    # set all indices to the special 'unknown' index (last index)
+                    cat_feats_oe = torch.full_like(cat_feats_oe, cat_feats_oe.max().item())
         else:
             cat_feats_oe = None
 
         bin_cats = x.get("bin_cats")
+        if bin_cats is not None and self.training and self.feature_dropout.get("bin_cats", 0) > 0:
+            if torch.rand(1).item() < self.feature_dropout["bin_cats"]:
+                # zeroes for bin flags
+                bin_cats = torch.zeros_like(bin_cats)
+
         if cat_feats_oe is not None and bin_cats is not None:
             cat_feats = torch.cat([cat_feats_oe, bin_cats], dim=-1)
         elif cat_feats_oe is not None:
@@ -127,10 +137,16 @@ class MultiHeadModel(nn.Module):
 
         # --- time features ---
         if self.time_mlp is not None and "times" in x:
-            fused_parts.append(self.time_mlp(x["times"]))
+            time_feats = self.time_mlp(x["times"])
+            if self.training and self.feature_dropout.get("times", 0) > 0:
+                if torch.rand(1).item() < self.feature_dropout["times"]:
+                    # zeroes for time as well
+                    time_feats = torch.zeros_like(time_feats)
+            fused_parts.append(time_feats)
 
         # --- text features ---
         if self.text_mlp is not None and "text" in x:
+            # we assume text is always present
             fused_parts.append(self.text_mlp(x["text"]))
 
         # --- fusion ---

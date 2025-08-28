@@ -1,15 +1,15 @@
 model:
   name: multihead_model_tower
-  path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-27_14-38-14_multihead_model_tower\intermediate_checkpoint.pt
-  cfg_path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-27_14-38-14_multihead_model_tower\resolved_config.yaml
+  path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-28_16-08-49_multihead_model_tower\intermediate_checkpoint.pt
+  cfg_path: C:\Users\mew\Projects\autotickets-rag-bot\runs\dl\2025-08-28_16-08-49_multihead_model_tower\resolved_config.yaml
 
 # Preprocessing / feature engeneering
 preprocessing:
   text_cols: [QUESTION]
   emb_text_col: QUESTION_clean
 
-  categorical: [S_NAME, REG, SOURCE]
-  time: [OPEN_TIME_]
+  categorical_cols: [S_NAME, REG, SOURCE]
+  time_cols: [OPEN_TIME]
   embedding_model_path: "./models/embeddings/deepvk_USER-bge-m3"
   
   cat_encoders:

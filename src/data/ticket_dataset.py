@@ -11,24 +11,7 @@ class TicketDataset(Dataset):
     """
 
     def __init__(self, feature_files: dict, heads_config: dict, split_name: str):
-        """
-        Args:
-            feature_files: dict of feature name -> file path, e.g.
-                {"cats": "cat_features.npz",
-                 "times": "time_features.npz",
-                 "text": "question_bge_m3.npz"}
-            heads_config: dict of head name -> config, e.g.
-                {"subcategory": {"type": "classification", "out_dim": 15},
-                 "priority": {"type": "binary", "out_dim": 1},
-                 "avariya": {"type": "binary", "out_dim": 1}}
-            split_name: "train", "val", "test"
-        """
         self.idx = load_split(split_name)
-        # if len(self.idx) > 10000:
-        #     self.idx = torch.tensor(self.idx)
-        #     perm = torch.randperm(len(self.idx))[:10000]
-        #     self.idx = self.idx[perm].tolist()
-            
         self.features = {}
         
         for feat_name, file_path in feature_files.items():
